@@ -58,7 +58,7 @@ Developer Mode, Lab experiments, `/source` self-inspection, sound, analytics, CM
 | Tests | Vitest | Core logic tests |
 | Deploy | Vercel Hobby (free) | Zero-config Next.js |
 
-Model is configurable: `GEMINI_MODEL` env var, default `gemini-2.5-flash`.
+Model is configurable: `GEMINI_MODEL` env var, default `gemini-flash-latest` (alias for the current free Flash model).
 
 ---
 
