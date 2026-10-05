@@ -1,0 +1,99 @@
+import type { Portfolio } from "../schema";
+import { COMMANDS, commandNames, getCommand } from "./commands";
+import { buildFs } from "./fs";
+import { expandHistory, parse, parseFlags } from "./parser";
+import { out, plainText, seg } from "./registry";
+import type { Effect, HistoryEntry, OutputItem, Result, ShellState } from "./types";
+import { nearest } from "./util";
+
+export const HISTORY_LIMIT = 200;
+
+export function initialState(now: number, history: HistoryEntry[] = []): ShellState {
+  return { cwd: [], prevCwd: [], history: history.slice(-HISTORY_LIMIT), sessionStart: now };
+}
+
+export function execute(
+  input: string,
+  state: ShellState,
+  p: Portfolio,
+  now = Date.now(),
+  opts: { maxPipelines?: number } = {},
+): Result {
+  const trimmed = input.trim();
+  if (!trimmed) return { output: [], effects: [], state, exitCode: 0 };
+
+  const expansion = expandHistory(trimmed, state.history.map((h) => h.command));
+  if (!expansion.ok) return { output: [out(seg(`kernel: ${expansion.error}`, "error"))], effects: [], state, exitCode: 1 };
+  const line = expansion.line;
+
+  const last = state.history[state.history.length - 1]?.command;
+  let st: ShellState = {
+    ...state,
+    history: last === line ? state.history : [...state.history, { command: line, at: now }].slice(-HISTORY_LIMIT),
+  };
+  const output: OutputItem[] = expansion.expanded ? [out(seg(line, "faint"))] : [];
+  const effects: Effect[] = [];
+
+  const parsed = parse(line);
+  if (!parsed.ok) return { output: [...output, out(seg(`kernel: ${parsed.error}`, "error"))], effects, state: st, exitCode: 1 };
+
+  let pipelines = parsed.pipelines;
+  let skipped = 0;
+  if (opts.maxPipelines && pipelines.length > opts.maxPipelines) {
+    skipped = pipelines.length - opts.maxPipelines;
+    pipelines = pipelines.slice(0, opts.maxPipelines);
+  }
+
+  // Plain English goes to the AI: an unknown first word followed by prose-like words, or anything ending in "?".
+  const single = pipelines.length === 1 && pipelines[0].length === 1 ? pipelines[0][0] : undefined;
+  const prose = (st: typeof single) =>
+    Boolean(st) && /^[a-z']+$/i.test(st!.name) && st!.argv.length > 0 && st!.argv.every((a) => !a.value.startsWith("-"));
+  if (single && !getCommand(single.name) && (prose(single) || /\?$/.test(line))) {
+    return { output, effects: [{ type: "ask", question: line }], state: st, exitCode: 0 };
+  }
+
+  const fs = buildFs(p);
+  let exitCode: 0 | 1 = 0;
+
+  for (const pipeline of pipelines) {
+    let stdin: string[] | null = null;
+    for (let i = 0; i < pipeline.length; i++) {
+      const stage = pipeline[i];
+      const isLast = i === pipeline.length - 1;
+      const cmd = getCommand(stage.name);
+      if (!cmd) {
+        const near = nearest(stage.name, commandNames());
+        output.push(
+          out(seg(`kernel: command not found: ${stage.name}`, "error")),
+          out(
+            ...(near ? [seg("did you mean ", "faint"), seg(near, "accent", { run: near }), seg(" · ", "faint")] : []),
+            seg("or ask in plain English", "faint"),
+          ),
+        );
+        exitCode = 1;
+        break;
+      }
+      const flags = parseFlags(stage.argv, cmd.flags);
+      if (!flags.ok) {
+        output.push(out(seg(`${cmd.name}: ${flags.error}`, "error")), out(seg(`usage: ${cmd.usage}`, "faint")));
+        exitCode = 1;
+        break;
+      }
+      const res = cmd.run(flags.args, flags.flags, { p, fs, state: st, stdin, now, commands: COMMANDS });
+      if (res.state) st = { ...st, ...res.state };
+      exitCode = res.exitCode ?? 0;
+      if (isLast) {
+        output.push(...(res.output ?? []));
+        effects.push(...(res.effects ?? []));
+      } else if (exitCode !== 0) {
+        output.push(...(res.output ?? []));
+        break;
+      } else {
+        stdin = plainText(res.output ?? []);
+      }
+    }
+  }
+
+  if (skipped) output.push(out(seg(`kernel: skipped ${skipped} more command${skipped === 1 ? "" : "s"} (limit ${opts.maxPipelines})`, "faint")));
+  return { output, effects, state: st, exitCode };
+}
