@@ -12,6 +12,23 @@ export function initialState(now: number, history: HistoryEntry[] = []): ShellSt
   return { cwd: [], prevCwd: [], history: history.slice(-HISTORY_LIMIT), sessionStart: now };
 }
 
+const PROSE_WORD = /^[\p{L}\p{N}'’",.!?()-]+$/u;
+
+/**
+ * Plain English goes to the AI. Decided on the raw line (apostrophes would otherwise open a quote):
+ * - unknown first word followed by prose-like words, or anything ending in "?";
+ * - a line starting with a command word only when it reads as a question (ends in "?", 3+ prose words).
+ */
+export function isQuestion(line: string): boolean {
+  if (/[|;]/.test(line)) return false;
+  const words = line.trim().split(/\s+/);
+  const prose = words.every((w) => PROSE_WORD.test(w)) && !words.slice(1).some((w) => w.startsWith("-"));
+  const asked = /\?$/.test(line);
+  if (getCommand(words[0])) return asked && words.length >= 3 && prose;
+  if (asked) return true;
+  return words.length >= 2 && prose && /^[\p{L}][\p{L}'’]*$/u.test(words[0]);
+}
+
 export function execute(
   input: string,
   state: ShellState,
@@ -44,13 +61,7 @@ export function execute(
     pipelines = pipelines.slice(0, opts.maxPipelines);
   }
 
-  // Plain English goes to the AI: an unknown first word followed by prose-like words, or anything ending in "?".
-  const single = pipelines.length === 1 && pipelines[0].length === 1 ? pipelines[0][0] : undefined;
-  const prose = (st: typeof single) =>
-    Boolean(st) && /^[a-z']+$/i.test(st!.name) && st!.argv.length > 0 && st!.argv.every((a) => !a.value.startsWith("-"));
-  if (single && !getCommand(single.name) && (prose(single) || /\?$/.test(line))) {
-    return { output, effects: [{ type: "ask", question: line }], state: st, exitCode: 0 };
-  }
+  if (isQuestion(line)) return { output, effects: [{ type: "ask", question: line }], state: st, exitCode: 0 };
 
   const fs = buildFs(p);
   let exitCode: 0 | 1 = 0;

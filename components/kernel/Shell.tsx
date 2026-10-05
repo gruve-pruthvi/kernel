@@ -19,6 +19,7 @@ import { bootLines } from "@/core/shell/welcome";
 import { kernel } from "@/lib/store";
 import { useMotionAllowed } from "@/lib/use-motion-allowed";
 import type { QueryEvent } from "@/server/query-handler";
+import { blockWhileBusy, tabDecision } from "./keys";
 import { PromptText, Transcript, type Row } from "./Transcript";
 import { ViewPane } from "./ViewPane";
 
@@ -418,7 +419,7 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
       return;
     }
     if (busyRef.current) {
-      e.preventDefault();
+      if (blockWhileBusy({ key: k, meta: e.metaKey, ctrl: e.ctrlKey, alt: e.altKey })) e.preventDefault();
       return;
     }
     if (k === "Escape") {
@@ -488,6 +489,7 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
       e.preventDefault();
       void run(input);
     } else if (k === "Tab") {
+      if (tabDecision({ input, menuOpen: Boolean(menu), busy: busyRef.current }) === "pass") return;
       e.preventDefault();
       completeNow(e.shiftKey);
     } else if ((k === "ArrowRight" || k === "End") && suggestion) {
