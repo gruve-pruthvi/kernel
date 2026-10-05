@@ -1,4 +1,3 @@
-// content/index.ts
 import { capabilities } from "./capabilities";
 import { experience } from "./experience";
 import { identity } from "./identity";
