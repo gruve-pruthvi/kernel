@@ -173,6 +173,11 @@ Every command: `name`, `aliases?`, `summary`, `usage`, `flags` (declared; unknow
 
 `complete(input, cursor, state, fs) → { replacement: string; candidates: string[] }` — commands at position 0, then command-aware: paths (cd → dirs only), system slugs (`run`, `open`, `man`), graph node ids, man topics, help topics, flags after `-`. Ghost text = remainder of first candidate when caret is at end.
 
+**Terminal-style completion UX (zsh/fish):**
+- **Autosuggestion (fish):** grey ghost text shows the most recent history entry that starts with the current input; otherwise the first completion candidate. → / End accepts.
+- **Tab:** one candidate → complete; several → extend to the common prefix; if nothing to extend, open a **completion menu** under the prompt listing every candidate with a one-line description (command summary, system tagline, capability/technology name, file kind, flag description).
+- **Menu:** Tab / ↓ next, Shift+Tab / ↑ previous (the input previews the selection), Enter accepts without running, Esc closes, typing dismisses, click selects.
+
 ---
 
 ## 6. Shell UI (`components/shell/`)

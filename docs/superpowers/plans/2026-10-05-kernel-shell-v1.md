@@ -2357,7 +2357,8 @@ const TOPICS: Record<string, OutputItem[]> = {
   ],
   shortcuts: [
     h("SHORTCUTS"),
-    body("Tab          complete · → or End accepts the grey suggestion"),
+    body("Tab          complete · Tab again opens a menu, Tab / Shift+Tab cycle, Enter picks"),
+    body("→ / End      accept the grey suggestion (your history first, then completion)"),
     body("↑ ↓          history · !! last command · !N command N"),
     body("Ctrl+R       search history"),
     body("Ctrl+A / E   start / end of line · Ctrl+U clear to start · Ctrl+W delete word"),
@@ -2870,7 +2871,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 **Interfaces:**
 - Consumes: `buildFs`, `resolve`, `isDir`; `COMMANDS` (tests); `GUI_PAGES` (`commands/actions`); `Command`.
-- Produces: `complete(input: string, cwd: string[], p: Portfolio, commands: Command[]): string[]` (full-line replacements), `ghost(input: string, candidates: string[]): string`, `commonPrefix(values: string[]): string`.
+- Produces: `complete(input: string, cwd: string[], p: Portfolio, commands: Command[]): string[]` (full-line replacements), `ghost(input: string, candidates: string[]): string`, `commonPrefix(values: string[]): string`, `autosuggest(input: string, history: string[], candidates: string[]): string` (fish-style: newest matching history entry first, else first candidate), `interface MenuItem { value: string; label: string; detail: string }`, `describeCandidates(candidates: string[], cwd: string[], p: Portfolio, commands: Command[]): MenuItem[]`.
 
 - [ ] **Step 1: Write the failing test `tests/shell/complete.test.ts`**
 
@@ -2878,7 +2879,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 import { describe, expect, it } from "vitest";
 import { portfolio } from "@/core/content";
 import { COMMANDS } from "@/core/shell/commands";
-import { commonPrefix, complete, ghost } from "@/core/shell/complete";
+import { autosuggest, commonPrefix, complete, describeCandidates, ghost } from "@/core/shell/complete";
 
 const c = (input: string, cwd: string[] = []) => complete(input, cwd, portfolio, COMMANDS);
 
@@ -2913,6 +2914,38 @@ describe("complete", () => {
   it("completes only the last stage of a pipeline", () => {
     expect(c("cat README.md | he")).toEqual(["cat README.md | head ", "cat README.md | help "]);
     expect(c("ls; cd sk")).toEqual(["ls; cd skills/"]);
+  });
+});
+
+describe("autosuggest (fish-style)", () => {
+  it("prefers the newest matching history entry, then completion", () => {
+    const history = ["grep -i rag .", "cd systems/atlas", "grep -n Hybrid systems"];
+    expect(autosuggest("grep", history, c("grep"))).toBe(" -n Hybrid systems");
+    expect(autosuggest("cd sy", history, c("cd sy"))).toBe("stems/atlas");
+    expect(autosuggest("cat R", history, c("cat R"))).toBe("EADME.md");
+    expect(autosuggest("", history, [])).toBe("");
+    expect(autosuggest("grep -n Hybrid systems", history, [])).toBe("");
+  });
+});
+
+describe("describeCandidates (completion menu)", () => {
+  const d = (input: string, cwd: string[] = []) => describeCandidates(c(input, cwd), cwd, portfolio, COMMANDS);
+  it("labels commands with their summary", () => {
+    expect(d("gr")).toEqual([
+      { value: "grep ", label: "grep", detail: COMMANDS.find((x) => x.name === "grep")!.summary },
+      { value: "graph ", label: "graph", detail: COMMANDS.find((x) => x.name === "graph")!.summary },
+    ]);
+  });
+  it("labels paths, systems, flags and topics", () => {
+    const atlas = portfolio.systems.find((s) => s.slug === "atlas")!;
+    expect(d("cd systems/a")[0]).toEqual({ value: "cd systems/atlas/", label: "atlas/", detail: atlas.tagline });
+    expect(d("cat R")[0]).toMatchObject({ label: "README.md", detail: "file" });
+    expect(d("open skills/g")[0]).toMatchObject({ label: "graph", detail: "view" });
+    expect(d("run a")[0]).toMatchObject({ label: "atlas", detail: atlas.tagline });
+    expect(d("grep --i")[0]).toMatchObject({ label: "--ignoreCase", detail: "ignore case" });
+    expect(d("graph lang")[0]).toMatchObject({ label: "langgraph", detail: "LangGraph" });
+    expect(d("help sh")[0]).toMatchObject({ label: "shortcuts", detail: "help topic" });
+    expect(d("cd ")[0].detail).toBe("directory");
   });
 });
 
@@ -2998,6 +3031,53 @@ export function complete(input: string, cwd: string[], p: Portfolio, commands: C
   }
 
   return [...new Set(options)].filter((o) => o.startsWith(last) && o !== last).map((o) => `${head}${o}`);
+}
+
+export function autosuggest(input: string, history: string[], candidates: string[]): string {
+  if (!input.trim()) return "";
+  for (let i = history.length - 1; i >= 0; i--) {
+    const h = history[i];
+    if (h.startsWith(input) && h.length > input.length) return h.slice(input.length);
+  }
+  return ghost(input, candidates);
+}
+
+export interface MenuItem {
+  value: string;
+  label: string;
+  detail: string;
+}
+
+/** Labels each completion candidate for the zsh-style menu. */
+export function describeCandidates(candidates: string[], cwd: string[], p: Portfolio, commands: Command[]): MenuItem[] {
+  return candidates.map((value) => {
+    const cut = Math.max(value.lastIndexOf("|"), value.lastIndexOf(";")) + 1;
+    const words = value.slice(cut).trim().split(/\s+/);
+    const word = words[words.length - 1] ?? value;
+    const trimmed = word.replace(/\/$/, "");
+    const label = trimmed.includes("/") ? `${trimmed.slice(trimmed.lastIndexOf("/") + 1)}${word.endsWith("/") ? "/" : ""}` : word;
+    const cmd = commands.find((c) => c.name === words[0]?.toLowerCase() || c.aliases?.includes(words[0]?.toLowerCase() ?? ""));
+    let detail = "";
+    if (words.length === 1 && cmd) detail = cmd.summary;
+    else if (label.startsWith("-") && cmd) {
+      const name = label.replace(/^-+/, "");
+      detail = cmd.flags?.[name]?.describe ?? "";
+    } else {
+      const node = resolve(buildFs(p), cwd, word);
+      const system = p.systems.find((s) => s.slug === label.replace(/\/$/, ""));
+      if (node?.kind === "system" || (system && !node)) detail = system?.tagline ?? "system";
+      else if (node && isDir(node)) detail = "directory";
+      else if (node?.kind === "file") detail = "file";
+      else if (node?.kind === "view") detail = "view";
+      else if (node?.kind === "link") detail = "download";
+      else if (system) detail = system.tagline;
+      else if (cmd?.name === "man" && commands.some((c) => c.name === label)) detail = commands.find((c) => c.name === label)!.summary;
+      else if (cmd?.name === "help") detail = "help topic";
+      else if (cmd?.name === "gui" || ["trace", "human", "contact"].includes(label)) detail = "visual page";
+      else detail = p.capabilities.find((x) => x.id === label)?.name ?? p.technologies.find((t) => t.id === label)?.name ?? (label === "kernel" ? "the manual" : "");
+    }
+    return { value, label, detail };
+  });
 }
 
 export function ghost(input: string, candidates: string[]): string {
@@ -3413,7 +3493,7 @@ import { getSystem, portfolio } from "@/core/content";
 import type { GraphEdge } from "@/core/graph";
 import type { PositionedNode } from "@/core/graph-layout";
 import { COMMANDS } from "@/core/shell/commands";
-import { commonPrefix, complete, ghost as ghostOf } from "@/core/shell/complete";
+import { autosuggest, commonPrefix, complete, describeCandidates, type MenuItem } from "@/core/shell/complete";
 import { parseDeepLink } from "@/core/shell/deeplink";
 import { execute, HISTORY_LIMIT, initialState } from "@/core/shell/execute";
 import { pathOf } from "@/core/shell/fs";
@@ -3471,6 +3551,7 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
   const [caret, setCaret] = useState(0);
   const [histCursor, setHistCursor] = useState<number | null>(null);
   const [search, setSearch] = useState<Search | null>(null);
+  const [menu, setMenu] = useState<{ items: MenuItem[]; index: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
   const [pane, setPane] = useState<Pane>(null);
@@ -3672,6 +3753,7 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
       setCaret(0);
       setHistCursor(null);
       setSearch(null);
+      setMenu(null);
       try {
         const res = execute(raw, stateRef.current, portfolio, Date.now(), { maxPipelines: 5 });
         stateRef.current = res.state;
@@ -3739,14 +3821,24 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
   // ---------- input ----------
 
   const candidates = useMemo(() => (search || !input ? [] : complete(input, cwd, portfolio, COMMANDS)), [input, cwd, search]);
-  const suggestion = caret === input.length ? ghostOf(input, candidates) : "";
+  // fish-style: newest matching history entry first, then the first completion candidate
+  const suggestion = caret === input.length && !menu ? autosuggest(input, historyList, candidates) : "";
   const searchMatch = useMemo(() => {
     if (!search || !search.query) return null;
     const hits = [...historyList].reverse().filter((c) => c.includes(search.query));
     return hits.length ? hits[Math.min(search.skip, hits.length - 1)] : null;
   }, [search, historyList]);
 
-  const completeNow = () => {
+  // zsh-style: complete, extend to the common prefix, then open a menu that Tab / Shift+Tab cycles through.
+  const completeNow = (back = false) => {
+    if (menu) {
+      const n = menu.items.length;
+      const index = menu.index < 0 ? (back ? n - 1 : 0) : (menu.index + (back ? -1 : 1) + n) % n;
+      setMenu({ ...menu, index });
+      setInput(menu.items[index].value);
+      setCaretAt(menu.items[index].value.length);
+      return;
+    }
     if (candidates.length === 1) {
       setInput(candidates[0]);
       setCaretAt(candidates[0].length);
@@ -3756,13 +3848,16 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
         setInput(prefix);
         setCaretAt(prefix.length);
       } else {
-        setRows((r) => [
-          ...r,
-          { id: ++idRef.current, kind: "prompt", cwd, text: input },
-          { id: ++idRef.current, kind: "item", item: out(...candidates.map((c) => seg(`${c.trimEnd().split(" ").pop()}   `, "muted"))) },
-        ]);
+        setMenu({ items: describeCandidates(candidates, cwd, portfolio, COMMANDS), index: -1 });
       }
     }
+  };
+
+  const pickFromMenu = (item: MenuItem) => {
+    setMenu(null);
+    setInput(item.value);
+    setCaretAt(item.value.length);
+    inputRef.current?.focus({ preventScroll: true });
   };
 
   const historyPrev = () => {
@@ -3811,9 +3906,23 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
     }
     if (k === "Escape") {
       e.nativeEvent.stopImmediatePropagation();
-      if (search) setSearch(null);
+      if (menu) setMenu(null);
+      else if (search) setSearch(null);
       else setPane(null);
       return;
+    }
+    if (menu) {
+      if (k === "ArrowDown" || k === "ArrowUp") {
+        e.preventDefault();
+        completeNow(k === "ArrowUp");
+        return;
+      }
+      if (k === "Enter" && menu.index >= 0) {
+        e.preventDefault();
+        setMenu(null);
+        return;
+      }
+      if (k !== "Tab") setMenu(null);
     }
     if (search) {
       if (ctrl && lower === "r") {
@@ -3863,7 +3972,7 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
       void run(input);
     } else if (k === "Tab") {
       e.preventDefault();
-      completeNow();
+      completeNow(e.shiftKey);
     } else if ((k === "ArrowRight" || k === "End") && suggestion) {
       e.preventDefault();
       setInput(input + suggestion);
@@ -3883,7 +3992,7 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
     <ViewPane view={pane.view} activeId={pane.activeId} graph={graph} onClose={() => setPane(null)} onRun={runFromClick} />
   );
   const keys: { label: string; action: () => void }[] = [
-    { label: "Tab", action: completeNow },
+    { label: "Tab", action: () => completeNow() },
     { label: "↑", action: historyPrev },
     { label: "cd ..", action: () => runFromClick("cd ..") },
     { label: "ls", action: () => runFromClick("ls") },
@@ -3948,6 +4057,7 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
                 setInput(e.target.value);
                 setCaret(e.target.selectionStart ?? e.target.value.length);
                 setHistCursor(null);
+                setMenu(null);
               }}
               onKeyDown={onKeyDown}
               onKeyUp={syncCaret}
@@ -3964,6 +4074,24 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
               className="absolute inset-0 h-full w-full cursor-text opacity-0"
             />
           </label>
+          {menu && (
+            <div role="listbox" aria-label="Completions" className="mt-1 grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-x-4 border-t border-border pt-1">
+              {menu.items.map((item, i) => (
+                <button
+                  key={item.value}
+                  type="button"
+                  role="option"
+                  aria-selected={i === menu.index}
+                  onPointerDown={(ev) => ev.preventDefault()}
+                  onClick={() => pickFromMenu(item)}
+                  className={`flex min-w-0 gap-2 rounded-sm px-1 text-left ${i === menu.index ? "bg-accent-soft" : "hover:bg-surface-2"}`}
+                >
+                  <span className={i === menu.index ? "text-accent" : "text-text"}>{item.label}</span>
+                  <span className="truncate text-faint">{item.detail}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         {paneNode && <div className="hidden w-[46%] min-w-[420px] md:block">{paneNode}</div>}
       </div>
@@ -4256,7 +4384,7 @@ Try `ls`, `cd systems/atlas`, `cat decisions.md`, `run atlas`, `grep -i rag . | 
 
 **Share a demo:** any command can be a link — `https://<your-site>/?cmd=run%20atlas` or `/?cmd=man%20atlas` (up to 5 commands separated by `;`).
 
-Shortcuts: Tab completes (→ accepts the grey suggestion), ↑/↓ history, Ctrl+R search, Ctrl+A/E/U/W editing, Ctrl+C cancel, Ctrl+L clear, Esc closes the side pane.
+Shortcuts: Tab completes (press again for a menu; Tab/Shift+Tab cycle), → accepts the grey history/completion suggestion, ↑/↓ history, Ctrl+R search, Ctrl+A/E/U/W editing, Ctrl+C cancel, Ctrl+L clear, Esc closes the side pane.
 ````
 
 - [ ] **Step 2: Append to `AGENTS.md`**
@@ -4280,6 +4408,7 @@ Expected: all green; `npm test` includes every `tests/shell/*` file.
 At 1440×900 and 390×844, dark and light:
 1. `/` first load in a fresh session: boot lines appear above neofetch, then prompt focused.
 2. Type `cd sy`, press Tab → `cd systems/`; type `a`, see ghost `tlas/`, press → then Enter; `pwd` prints `~/systems/atlas`.
+2b. Type `gr`, Tab → menu shows `grep` and `graph` with summaries; Tab cycles (input previews), Shift+Tab goes back, Enter picks without running, Esc closes; after running `grep -i rag .` once, typing `gr` shows ghost text ` -i rag .` from history.
 3. `run` streams steps with filling bars; pane lights active node; Ctrl+C mid-run prints `^C interrupted`.
 4. `grep -i hybrid . | head -n 3` prints 3 highlighted lines; clicking a path opens the reader pane; `q` closes it.
 5. `man grep`, `help shortcuts`, `history` (click ↗ loads `/?cmd=…` and runs it).
