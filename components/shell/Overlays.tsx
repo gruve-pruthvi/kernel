@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { QueryPanel } from "@/components/query/QueryPanel";
 import { kernel, useKernel } from "@/lib/store";
 
 function isTyping(target: EventTarget | null) {
@@ -33,5 +34,5 @@ export function Overlays() {
     return () => window.removeEventListener("keydown", onKey);
   }, [commandOpen]);
 
-  return null;
+  return <QueryPanel />;
 }
