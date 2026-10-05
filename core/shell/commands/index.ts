@@ -1,7 +1,8 @@
 import type { Command } from "../registry";
 import { navCommands } from "./nav";
+import { textCommands } from "./text";
 
-export const COMMANDS: Command[] = [...navCommands];
+export const COMMANDS: Command[] = [...navCommands, ...textCommands];
 
 export function getCommand(name: string): Command | undefined {
   const n = name.toLowerCase();
