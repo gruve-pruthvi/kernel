@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { SystemGroups } from "@/components/systems/SystemGroups";
 import { SystemsExplorer } from "@/components/systems/SystemsExplorer";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { getCapabilities, getSystems, getTechnologies } from "@/core/content";
@@ -15,7 +16,7 @@ export default function SystemsPage() {
         Every system has an architecture you can inspect, the decisions behind it, and a simulated request you can run.
       </p>
       <div className="mt-10">
-        <Suspense fallback={null}>
+        <Suspense fallback={<SystemGroups systems={getSystems()} />}>
           <SystemsExplorer systems={getSystems()} technologies={getTechnologies()} capabilities={getCapabilities()} />
         </Suspense>
       </div>

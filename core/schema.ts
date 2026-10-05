@@ -97,7 +97,7 @@ export const commitSchema = z.object({
   message: z.string().min(1),
   date: yearMonth,
   body: z.string().optional(),
-  systems: z.array(id).optional(),
+  systems: z.array(id).optional(), // system slugs
 });
 
 export const experienceSchema = z.object({

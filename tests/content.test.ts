@@ -107,3 +107,20 @@ describe("format", () => {
     expect(formatPeriod("2022-07", "2024-05")).toBe("Jul 2022 — May 2024");
   });
 });
+
+describe("commit references (review fix)", () => {
+  it("validates commit systems against slugs, not ids", () => {
+    const p = clone();
+    p.systems[0].id = "renamed-id";
+    p.experience[0].commits[0].systems = [p.systems[0].slug];
+    expect(checkIntegrity(p).filter((e) => e.includes("unknown system"))).toEqual([]);
+    p.experience[0].commits[0].systems = ["renamed-id"];
+    expect(checkIntegrity(p).some((e) => e.includes('unknown system "renamed-id"'))).toBe(true);
+  });
+
+  it("reports duplicate system ids", () => {
+    const p = clone();
+    p.systems[1].id = p.systems[0].id;
+    expect(checkIntegrity(p).some((e) => e.includes("duplicate id"))).toBe(true);
+  });
+});

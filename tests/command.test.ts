@@ -124,3 +124,28 @@ describe("suggest / complete", () => {
     expect(complete("", portfolio).length).toBeGreaterThan(5);
   });
 });
+
+describe("flag validation (review fix)", () => {
+  it("rejects unknown flags with usage", () => {
+    for (const input of ["systems --bogus", "inspect atlas --opne", "stack --nope", "whoami --x"]) {
+      const res = run(input);
+      expect(res.lines[0].kind, input).toBe("error");
+      expect(res.lines[0].text, input).toContain("unknown flag");
+      expect(res.actions, input).toEqual([]);
+    }
+  });
+
+  it("treats an empty --flag= value as missing", () => {
+    expect(run("systems --tech=").lines[0].kind).toBe("error");
+  });
+
+  it("matches flag names and values case-insensitively", () => {
+    expect(text("systems --TECH LangGraph")).toContain("Atlas");
+  });
+
+  it("rejects recruiter arguments other than on/off", () => {
+    const res = run("recruiter maybe");
+    expect(res.lines[0].kind).toBe("error");
+    expect(res.actions).toEqual([]);
+  });
+});

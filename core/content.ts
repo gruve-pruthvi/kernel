@@ -12,10 +12,11 @@ export function checkIntegrity(p: Portfolio): string[] {
   const errors: string[] = [];
   const techIds = new Set(p.technologies.map((t) => t.id));
   const capIds = new Set(p.capabilities.map((c) => c.id));
-  const systemIds = new Set(p.systems.map((s) => s.id));
+  const systemSlugs = new Set(p.systems.map((s) => s.slug));
 
   for (const d of duplicates(p.technologies.map((t) => t.id))) errors.push(`technologies: duplicate id "${d}"`);
   for (const d of duplicates(p.capabilities.map((c) => c.id))) errors.push(`capabilities: duplicate id "${d}"`);
+  for (const d of duplicates(p.systems.map((s) => s.id))) errors.push(`systems: duplicate id "${d}"`);
   for (const d of duplicates(p.systems.map((s) => s.slug))) errors.push(`systems: duplicate slug "${d}"`);
   for (const d of duplicates(p.systems.map((s) => s.number))) errors.push(`systems: duplicate number ${d}`);
 
@@ -48,7 +49,7 @@ export function checkIntegrity(p: Portfolio): string[] {
   for (const e of p.experience) {
     e.commits.forEach((c, i) => {
       for (const sys of c.systems ?? []) {
-        if (!systemIds.has(sys)) errors.push(`experience.${e.id}.commits[${i}]: unknown system "${sys}"`);
+        if (!systemSlugs.has(sys)) errors.push(`experience.${e.id}.commits[${i}]: unknown system "${sys}"`);
       }
     });
   }

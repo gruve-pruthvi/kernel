@@ -38,6 +38,21 @@ export const COMMANDS = [
 
 const VALUE_FLAGS = new Set(["tech", "cap"]);
 
+// Flags each command accepts; commands not listed (ask, sudo, rm) take free-form input.
+const ALLOWED_FLAGS: Record<string, readonly string[]> = {
+  help: [],
+  whoami: [],
+  systems: ["tech", "cap"],
+  inspect: ["open"],
+  graph: [],
+  trace: [],
+  stack: TECH_CATEGORIES,
+  recruiter: [],
+  resume: [],
+  contact: [],
+  clear: [],
+};
+
 const line = (text: string, kind: OutputKind = "text", href?: string): OutputLine => ({ kind, text, ...(href ? { href } : {}) });
 const error = (text: string, hint?: string): CommandResult => ({
   lines: [line(text, "error"), ...(hint ? [line(hint, "muted")] : [])],
@@ -81,7 +96,7 @@ export function parseCommand(input: string): ParsedCommand | null {
       const body = token.slice(2);
       const eq = body.indexOf("=");
       if (eq >= 0) {
-        flags[body.slice(0, eq).toLowerCase()] = body.slice(eq + 1);
+        flags[body.slice(0, eq).toLowerCase()] = body.slice(eq + 1) || true;
       } else if (VALUE_FLAGS.has(body.toLowerCase()) && rest[i + 1] && !rest[i + 1].startsWith("--")) {
         flags[body.toLowerCase()] = rest[++i];
       } else {
@@ -121,7 +136,7 @@ export function suggest(name: string): string | undefined {
 function flagValue(flags: ParsedCommand["flags"], key: string): string | undefined | null {
   if (!(key in flags)) return undefined;
   const v = flags[key];
-  return v === true ? null : v;
+  return v === true ? null : v.toLowerCase();
 }
 
 function runSystems(cmd: ParsedCommand, p: Portfolio): CommandResult {
@@ -226,6 +241,13 @@ export function runCommand(input: string, p: Portfolio, ctx: { recruiter: boolea
   const cmd = parseCommand(input);
   if (!cmd) return { lines: [], actions: [] };
 
+  const allowed = ALLOWED_FLAGS[cmd.name];
+  const unknownFlag = allowed && Object.keys(cmd.flags).find((f) => !allowed.includes(f));
+  if (unknownFlag) {
+    const usage = COMMANDS.find((c) => c.name === cmd.name)?.usage ?? cmd.name;
+    return error(`${cmd.name}: unknown flag --${unknownFlag}`, `usage: ${usage}`);
+  }
+
   switch (cmd.name) {
     case "help":
       return {
@@ -256,6 +278,7 @@ export function runCommand(input: string, p: Portfolio, ctx: { recruiter: boolea
     }
     case "recruiter": {
       const arg = cmd.args[0]?.toLowerCase();
+      if (arg && arg !== "on" && arg !== "off") return error(`recruiter: expected on or off, got "${arg}"`, "usage: recruiter [on|off]");
       const on = arg === "on" ? true : arg === "off" ? false : !ctx.recruiter;
       return { lines: [line(`Recruiter mode ${on ? "on" : "off"}.`, "muted")], actions: [{ type: "toggleRecruiter", on }] };
     }

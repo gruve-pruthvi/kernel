@@ -113,4 +113,15 @@ describe("handleQuery", () => {
     expect(ev.some((e) => e.type === "text" && e.text.includes("Relay"))).toBe(true);
     expect(ev.at(-1)).toEqual({ type: "done" });
   });
+
+  it("adds a text explanation when the model replies with only a tool call", async () => {
+    const model = modelWith([
+      { type: "tool-call", toolCallId: "c1", toolName: "openSystem", input: JSON.stringify({ slug: "atlas" }) },
+      finish,
+    ]);
+    const ev = await events(await handleQuery(request(ask("open atlas")), { portfolio, limiter: limiter(), getModel: () => model }));
+    expect(ev).toContainEqual({ type: "action", action: { type: "openSystem", slug: "atlas" } });
+    const text = ev.filter((e) => e.type === "text").map((e) => (e as { text: string }).text).join("");
+    expect(text).toContain("Atlas");
+  });
 });

@@ -1,6 +1,6 @@
 import { streamText, tool, type LanguageModel } from "ai";
 import { z } from "zod";
-import { validateAction, type UiAction } from "@/core/actions";
+import { describeAction, validateAction, type UiAction } from "@/core/actions";
 import { buildContext, localAnswer, retrieve, systemPrompt, toSources, type Source } from "@/core/query";
 import type { RateLimitResult } from "@/core/ratelimit";
 import type { Portfolio } from "@/core/schema";
@@ -111,6 +111,8 @@ export async function handleQuery(req: Request, deps: QueryDeps): Promise<Respon
       }
 
       let emitted = false;
+      let sentText = false;
+      const sentActions: UiAction[] = [];
       try {
         const result = streamText({
           model,
@@ -125,16 +127,22 @@ export async function handleQuery(req: Request, deps: QueryDeps): Promise<Respon
           if (part.type === "text-delta" && part.text) {
             if (!emitted) send({ type: "meta", mode: "ai", sources: toSources(results) });
             emitted = true;
+            sentText = true;
             send({ type: "text", text: part.text });
           } else if (part.type === "tool-call") {
             const action = validateAction({ type: part.toolName, ...(part.input as object) }, portfolio);
             if (!action) continue;
             if (!emitted) send({ type: "meta", mode: "ai", sources: toSources(results) });
             emitted = true;
+            sentActions.push(action);
             send({ type: "action", action });
           }
         }
         if (!emitted) sendLocal();
+        else if (!sentText) {
+          // Models often answer "show/open" requests with a bare tool call; say what happened.
+          send({ type: "text", text: `${sentActions.map((a) => describeAction(a, portfolio)).join(". ")}.` });
+        }
       } catch (err) {
         console.error("[kernel] query model error:", err instanceof Error ? err.message : err);
         if (emitted) send({ type: "error", message: "The answer was interrupted. Try again in a moment." });

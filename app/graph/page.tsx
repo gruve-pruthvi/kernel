@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { GraphStatic } from "@/components/graph/GraphStatic";
 import { SkillGraph } from "@/components/graph/SkillGraph";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { portfolio } from "@/core/content";
@@ -16,7 +17,7 @@ export default function GraphPage() {
       <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Skills, with receipts.</h1>
       <p className="mt-3 max-w-2xl text-muted">No logo walls. Every technology links to the systems that prove it.</p>
       <div className="mt-10">
-        <Suspense fallback={null}>
+        <Suspense fallback={<GraphStatic nodes={nodes} edges={edges} />}>
           <SkillGraph nodes={nodes} edges={edges} />
         </Suspense>
       </div>

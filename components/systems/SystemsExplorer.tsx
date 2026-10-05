@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SystemCard } from "@/components/systems/SystemCard";
+import { SystemGroups } from "@/components/systems/SystemGroups";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { chip, chipActive } from "@/components/ui/styles";
 import type { Capability, System, Technology } from "@/core/schema";
@@ -91,26 +92,7 @@ export function SystemsExplorer({
           )}
         </div>
       ) : (
-        <>
-          <div className="mt-10">
-            <SectionLabel>Featured</SectionLabel>
-            <div className="mt-4 grid gap-4 md:grid-cols-3">
-              {systems.filter((s) => s.featured).map((s) => (
-                <SystemCard key={s.slug} system={s} />
-              ))}
-            </div>
-          </div>
-          {systems.some((s) => !s.featured) && (
-            <div className="mt-10">
-              <SectionLabel>Other systems</SectionLabel>
-              <div className="mt-4 grid gap-4 md:grid-cols-3">
-                {systems.filter((s) => !s.featured).map((s) => (
-                  <SystemCard key={s.slug} system={s} />
-                ))}
-              </div>
-            </div>
-          )}
-        </>
+        <SystemGroups systems={systems} />
       )}
     </div>
   );
