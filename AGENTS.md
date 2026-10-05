@@ -17,3 +17,6 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Use design tokens (`bg-surface`, `text-muted`, `text-accent`, …); do not add new colours.
 - Every animation must respect reduced motion and Recruiter Mode (`useMotionAllowed`, `.motion-optional`).
 - Run `npm test && npm run lint && npm run build` before committing.
+- Shell spec: `docs/superpowers/specs/2026-10-05-kernel-shell-v1-design.md`; plan: `docs/superpowers/plans/2026-10-05-kernel-shell-v1.md`.
+- `core/shell/` is pure: commands return `{ output, effects, state }`; only `components/kernel/Shell.tsx` performs effects.
+- Every new command needs summary, usage, description, examples, seeAlso and tests in `tests/shell/`.

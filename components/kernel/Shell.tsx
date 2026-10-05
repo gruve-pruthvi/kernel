@@ -263,7 +263,9 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
       busyRef.current = true;
       setBusy(true);
       cancel.current = { cancelled: false };
-      setRows((r) => [...r, { id: ++idRef.current, kind: "prompt", cwd: stateRef.current.cwd, text: raw }]);
+      // Capture before execute(): the updater runs later, after stateRef has moved on.
+      const promptRow: Row = { id: ++idRef.current, kind: "prompt", cwd: stateRef.current.cwd, text: raw };
+      setRows((r) => [...r, promptRow]);
       setInput("");
       setCaret(0);
       setHistCursor(null);
@@ -437,7 +439,7 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
         setMenu(null);
         return;
       }
-      if (k !== "Tab") setMenu(null);
+      if (k !== "Tab" && !["Shift", "Control", "Alt", "Meta"].includes(k)) setMenu(null);
     }
     if (search) {
       if (ctrl && lower === "r") {

@@ -1,6 +1,23 @@
 # Kernel
 
-An interactive developer portfolio: inspectable **Systems** (architecture, decisions, simulated requests), a skill **Graph**, a git-style **Trace**, an AI **Query** that answers from portfolio data and drives the UI, a **⌘K Command** terminal, and a **Recruiter Mode** one-screen summary.
+An interactive developer portfolio: inspectable **Systems** (architecture, decisions, simulated requests), a skill **Graph**, a git-style **Trace**, an AI **Query** that answers from portfolio data and drives the UI, and a **Recruiter Mode** one-screen summary — all behind a terminal-first home page: the **Kernel shell**.
+
+## The shell
+
+The home page is **Kernel**, a shell over a virtual filesystem generated from `content/`:
+
+```
+~/systems/<name>/   README.md · architecture · decisions.md · tradeoffs.md · impact.txt · stack.txt · links.txt
+~/skills/           <capability>.md · graph
+~/stack/            <technology>.txt
+~/README.md · about.md · career.log · contact.txt · resume.pdf
+```
+
+Try `ls`, `cd systems/atlas`, `cat decisions.md`, `run atlas`, `grep -i rag . | head -n 5`, `find . -name *.md`, `man kernel`, `history`, or ask anything in plain English. Everything underlined is clickable; the visual site is one `gui` away.
+
+**Share a demo:** any command can be a link — `https://<your-site>/?cmd=run%20atlas` or `/?cmd=man%20atlas` (up to 5 commands separated by `;`).
+
+Shortcuts: Tab completes (press again for a menu; Tab/Shift+Tab cycle), → accepts the grey history/completion suggestion, ↑/↓ history, Ctrl+R search, Ctrl+A/E/U/W editing, Ctrl+C cancel, Ctrl+L clear, Esc closes the side pane.
 
 Built with Next.js 16, TypeScript, Tailwind CSS 4, Motion, d3-force, Zod and the Vercel AI SDK (Gemini).
 
@@ -53,7 +70,7 @@ The Hobby plan is free; the site is static except `/api/query`. Query is rate-li
 
 ```
 content/   portfolio data (the only place facts live)
-core/      pure TypeScript: schemas, selectors, graph, search, actions, command, query, rate limit
+core/      pure TypeScript: schemas, selectors, graph, search, actions, query, rate limit; core/shell = the shell engine
 server/    AI query handler (Gemini streaming + local fallback)
 app/       routes: / systems systems/[slug] graph trace human connect api/query
 components/ UI
@@ -63,4 +80,4 @@ docs/      design spec and implementation plan
 
 ## Keyboard
 
-`/` ask · `⌘K` / `Ctrl+K` command · `Esc` close
+`/` ask (visual pages) · `⌘K` / `Ctrl+K` back to the shell · `Esc` close
