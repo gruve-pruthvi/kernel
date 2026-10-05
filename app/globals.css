@@ -145,25 +145,6 @@ body {
   animation: blink 1s step-end infinite;
 }
 
-/* Boot sequence: shown only when the inline head script sets data-boot="pending" */
-.boot-overlay {
-  display: none;
-}
-:root[data-boot="pending"] .boot-overlay {
-  display: flex;
-  animation: boot-out 0.35s ease-in 2.1s forwards;
-}
-:root[data-boot="pending"] .boot-line {
-  opacity: 0;
-  animation: fade-up 0.25s ease-out forwards;
-}
-@keyframes boot-out {
-  to {
-    opacity: 0;
-    visibility: hidden;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

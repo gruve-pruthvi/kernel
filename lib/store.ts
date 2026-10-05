@@ -8,7 +8,6 @@ export type KernelState = {
   queryOpen: boolean;
   querySeed: string | null;
   queryNonce: number;
-  commandOpen: boolean;
 };
 
 const initial: KernelState = {
@@ -17,7 +16,6 @@ const initial: KernelState = {
   queryOpen: false,
   querySeed: null,
   queryNonce: 0,
-  commandOpen: false,
 };
 
 let state = initial;
@@ -80,16 +78,10 @@ export const kernel = {
   },
   openQuery(seed?: string) {
     hydrate();
-    set({ queryOpen: true, querySeed: seed ?? null, queryNonce: state.queryNonce + 1, commandOpen: false });
+    set({ queryOpen: true, querySeed: seed ?? null, queryNonce: state.queryNonce + 1 });
   },
   closeQuery() {
     set({ queryOpen: false, querySeed: null });
-  },
-  openCommand() {
-    set({ commandOpen: true, queryOpen: false });
-  },
-  closeCommand() {
-    set({ commandOpen: false });
   },
 };
 

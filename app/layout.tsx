@@ -1,8 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
-import { Footer } from "@/components/shell/Footer";
-import { Header } from "@/components/shell/Header";
-import { RecruiterSummary } from "@/components/recruiter/RecruiterSummary";
 import { Overlays } from "@/components/shell/Overlays";
 import { getIdentity } from "@/core/content";
 import "./globals.css";
@@ -24,14 +21,14 @@ export const viewport: Viewport = {
   ],
 };
 
-// Runs before paint: restores theme + recruiter mode, and arms the boot sequence on first home visit.
-const bootScript = `(function(){try{var d=document.documentElement,s=localStorage;var t=s.getItem("kernel:theme");if(t)d.dataset.theme=t;var r=s.getItem("kernel:recruiter")==="on";if(r)d.dataset.recruiter="on";var m=window.matchMedia("(prefers-reduced-motion: reduce)").matches;if(location.pathname==="/"&&!r&&!m&&!s.getItem("kernel:booted"))d.dataset.boot="pending";}catch(e){}})();`;
+// Runs before paint: restores theme and recruiter mode.
+const themeScript = `(function(){try{var d=document.documentElement,s=localStorage;var t=s.getItem("kernel:theme");if(t)d.dataset.theme=t;if(s.getItem("kernel:recruiter")==="on")d.dataset.recruiter="on";}catch(e){}})();`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" data-theme="dark" className={`${inter.variable} ${mono.variable}`} suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: bootScript }} />
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-dvh bg-bg text-text antialiased">
         <a
@@ -40,12 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         >
           Skip to content
         </a>
-        <Header />
-        <main id="main" className="mx-auto w-full max-w-6xl px-4 sm:px-6">
-          <RecruiterSummary />
-          {children}
-        </main>
-        <Footer />
+        {children}
         <Overlays />
       </body>
     </html>

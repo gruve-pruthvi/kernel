@@ -10,7 +10,7 @@ export function Footer() {
           KERNEL · {identity.name} · {new Date().getFullYear()}
         </p>
         <p className="flex items-center gap-2">
-          <Kbd>/</Kbd> ask <span aria-hidden>·</span> <Kbd>⌘K</Kbd> command
+          <Kbd>/</Kbd> ask <span aria-hidden>·</span> <Kbd>⌘K</Kbd> shell
         </p>
       </div>
     </footer>

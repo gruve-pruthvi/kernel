@@ -1,9 +1,9 @@
 "use client";
 
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { Terminal } from "@/components/command/Terminal";
 import { QueryPanel } from "@/components/query/QueryPanel";
-import { kernel, useKernel } from "@/lib/store";
+import { kernel } from "@/lib/store";
 
 function isTyping(target: EventTarget | null) {
   const el = target as HTMLElement | null;
@@ -11,34 +11,28 @@ function isTyping(target: EventTarget | null) {
 }
 
 export function Overlays() {
-  const commandOpen = useKernel((s) => s.commandOpen);
+  const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        if (commandOpen) kernel.closeCommand();
-        else kernel.openCommand();
+        if (pathname !== "/") router.push("/");
         return;
       }
       if (e.key === "Escape") {
-        kernel.closeCommand();
         kernel.closeQuery();
         return;
       }
-      if (e.key === "/" && !isTyping(e.target)) {
+      if (e.key === "/" && pathname !== "/" && !isTyping(e.target)) {
         e.preventDefault();
         kernel.openQuery();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [commandOpen]);
+  }, [pathname, router]);
 
-  return (
-    <>
-      <QueryPanel />
-      <Terminal />
-    </>
-  );
+  return <QueryPanel />;
 }

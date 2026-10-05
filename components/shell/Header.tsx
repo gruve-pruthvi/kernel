@@ -52,14 +52,13 @@ export function Header() {
           >
             Ask <Kbd>/</Kbd>
           </button>
-          <button
-            type="button"
-            onClick={kernel.openCommand}
-            aria-label="Open command terminal"
-            className="hidden items-center rounded-md px-2 py-1.5 text-muted transition hover:bg-surface-2 hover:text-text sm:inline-flex"
+          <Link
+            href="/"
+            aria-label="Open the Kernel shell (⌘K)"
+            className="hidden items-center gap-1.5 rounded-md px-2 py-1.5 font-mono text-xs text-muted transition hover:bg-surface-2 hover:text-text sm:inline-flex"
           >
-            <Kbd>⌘K</Kbd>
-          </button>
+            &gt;_ shell <Kbd>⌘K</Kbd>
+          </Link>
           <RecruiterToggle />
           <ThemeToggle />
           <button
@@ -87,9 +86,9 @@ export function Header() {
             </Link>
           ))}
           <div className="mt-2 flex gap-2 border-t border-border pt-3">
-            <button type="button" onClick={kernel.openCommand} className="font-mono text-xs text-muted">
-              Command
-            </button>
+            <Link href="/" className="font-mono text-xs text-muted">
+              Shell
+            </Link>
             <span className="text-faint">·</span>
             <button type="button" onClick={kernel.toggleRecruiter} className="font-mono text-xs text-muted">
               Recruiter mode
