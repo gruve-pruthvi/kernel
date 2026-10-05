@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { Terminal } from "@/components/command/Terminal";
 import { QueryPanel } from "@/components/query/QueryPanel";
 import { kernel, useKernel } from "@/lib/store";
 
@@ -34,5 +35,10 @@ export function Overlays() {
     return () => window.removeEventListener("keydown", onKey);
   }, [commandOpen]);
 
-  return <QueryPanel />;
+  return (
+    <>
+      <QueryPanel />
+      <Terminal />
+    </>
+  );
 }
