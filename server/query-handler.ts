@@ -15,7 +15,7 @@ export const queryRequestSchema = z
       .min(1)
       .max(MAX_MESSAGES),
   })
-  .refine((b) => b.messages[b.messages.length - 1].role === "user", "last message must be from the user")
+  .refine((b) => b.messages.at(-1)?.role === "user", "last message must be from the user")
   .refine(
     (b) => b.messages.every((m) => m.role !== "user" || m.content.length <= MAX_USER_CHARS),
     `user messages are limited to ${MAX_USER_CHARS} characters`,

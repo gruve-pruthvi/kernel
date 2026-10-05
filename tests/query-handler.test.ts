@@ -49,6 +49,8 @@ describe("handleQuery", () => {
     expect((await handleQuery(request({ messages: [{ role: "assistant", content: "hi" }] }), deps)).status).toBe(400);
     const tooMany = { messages: Array.from({ length: 13 }, () => ({ role: "user", content: "hi" })) };
     expect((await handleQuery(request(tooMany), deps)).status).toBe(400);
+    expect((await handleQuery(request({ messages: [] }), deps)).status).toBe(400);
+    expect((await handleQuery(request({ messages: "hi" }), deps)).status).toBe(400);
     const notJson = new Request("http://localhost/api/query", { method: "POST", body: "{nope" });
     expect((await handleQuery(notJson, deps)).status).toBe(400);
   });
