@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { Footer } from "@/components/shell/Footer";
 import { Header } from "@/components/shell/Header";
+import { RecruiterSummary } from "@/components/recruiter/RecruiterSummary";
 import { Overlays } from "@/components/shell/Overlays";
 import { getIdentity } from "@/core/content";
 import "./globals.css";
@@ -41,6 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </a>
         <Header />
         <main id="main" className="mx-auto w-full max-w-6xl px-4 sm:px-6">
+          <RecruiterSummary />
           {children}
         </main>
         <Footer />
