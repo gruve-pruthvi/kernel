@@ -15,7 +15,7 @@ A first-visit **bootloader** (GRUB-style menu with countdown) is the signature m
 **Success criteria**
 
 1. A recruiter who does nothing reaches the readable Recruiter page in ≤ 3.6 s on desktop (≤ 2.6 s mobile); any click/scroll/Enter gets them there immediately.
-2. Returning visitors never see the menu; they land in their last mode with no flash of the wrong mode.
+2. ~~Returning visitors never see the menu~~ — changed 2026-10-06 at the owner's request: the menu shows on every load of `/`, with the visitor's last mode preselected and the same countdown.
 3. Mode switching is available everywhere: header pill, `` ` `` console, shell commands, URLs.
 4. Crawlers, share previews and no-JS visitors get the full server-rendered Recruiter page.
 5. No fabricated data: every number and line shown comes from `content/` or real runtime state.

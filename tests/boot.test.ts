@@ -6,7 +6,6 @@ import type { Portfolio } from "@/core/schema";
 
 const base: BootSignals = {
   storedMode: null,
-  menuSeen: false,
   referrer: "",
   cmdParam: null,
   modeParam: null,
@@ -37,25 +36,26 @@ describe("decideBoot", () => {
     }
   });
 
-  it("returning visitors skip the menu and go to their stored mode", () => {
-    expect(decideBoot(sig({ menuSeen: true, storedMode: "shell" }))).toMatchObject({ show: false, target: "shell" });
-    expect(decideBoot(sig({ menuSeen: true, storedMode: "human" }))).toMatchObject({ show: false, target: "human" });
+  it("returning visitors see the menu on every load, with their last mode preselected and the same countdown", () => {
+    expect(decideBoot(sig({ storedMode: "shell" }))).toEqual({ show: true, preselect: "shell", countdownMs: 3000, target: "shell" });
+    expect(decideBoot(sig({ storedMode: "human", referrer: "https://github.com/x" }))).toMatchObject({ show: true, preselect: "human" });
+    expect(decideBoot(sig({ storedMode: "shell", isMobile: true })).countdownMs).toBe(2000);
   });
 
   it("partial storage shows the menu", () => {
-    expect(decideBoot(sig({ menuSeen: true, storedMode: null })).show).toBe(true);
-    expect(decideBoot(sig({ menuSeen: false, storedMode: "shell" })).show).toBe(true);
+    expect(decideBoot(sig({ storedMode: null })).show).toBe(true);
+    expect(decideBoot(sig({ storedMode: "shell" })).show).toBe(true);
   });
 
   it("explicit mode and cmd params skip the menu", () => {
     expect(decideBoot(sig({ modeParam: "shell" }))).toMatchObject({ show: false, preselect: "shell", target: "shell" });
-    expect(decideBoot(sig({ modeParam: "human", menuSeen: true, storedMode: "shell" }))).toMatchObject({ show: false, target: "human" });
+    expect(decideBoot(sig({ modeParam: "human", storedMode: "shell" }))).toMatchObject({ show: false, target: "human" });
     expect(decideBoot(sig({ cmdParam: "ls" }))).toMatchObject({ show: false, target: "shell" });
     expect(decideBoot(sig({ modeParam: "bogus" }))).toMatchObject({ show: true, preselect: "human" });
   });
 
   it("?boot=1 always shows the menu", () => {
-    expect(decideBoot(sig({ forceBoot: true, menuSeen: true, storedMode: "shell" })).show).toBe(true);
+    expect(decideBoot(sig({ forceBoot: true, storedMode: "shell" })).show).toBe(true);
     expect(decideBoot(sig({ forceBoot: true, lateHydration: true })).show).toBe(true);
   });
 
@@ -143,7 +143,7 @@ describe("bootScript", () => {
           if (storedMode) storage["kernel:mode"] = storedMode;
           if (menuSeen) storage["kernel:bootmenu"] = "seen";
           const q = new URLSearchParams(search);
-          const d = decideBoot(sig({ storedMode, menuSeen, modeParam: q.get("mode"), forceBoot: q.get("boot") === "1" }));
+          const d = decideBoot(sig({ storedMode, modeParam: q.get("mode"), forceBoot: q.get("boot") === "1" }));
           const r = runScript({ search, storage });
           const label = JSON.stringify({ storedMode, menuSeen, search });
           expect(r.boot === "on", label).toBe(d.show);
@@ -177,7 +177,7 @@ describe("hydration lateness", () => {
 describe("section links", () => {
   it("a link to a section of the recruiter page skips the menu and never redirects", () => {
     expect(decideBoot(sig({ anchor: "#human" }))).toMatchObject({ show: false, target: "human" });
-    expect(decideBoot(sig({ anchor: "#human", menuSeen: true, storedMode: "shell" }))).toMatchObject({ show: false, target: "human" });
+    expect(decideBoot(sig({ anchor: "#human", storedMode: "shell" }))).toMatchObject({ show: false, target: "human" });
     expect(decideBoot(sig({ anchor: "#" })).show).toBe(true);
     expect(decideBoot(sig({ anchor: "#ask", forceBoot: true })).show).toBe(true);
     expect(decideBoot(sig({ anchor: "#ask", modeParam: "shell" }))).toMatchObject({ show: false, target: "shell" });
@@ -191,7 +191,7 @@ describe("section links", () => {
           if (storedMode) storage["kernel:mode"] = storedMode;
           if (menuSeen) storage["kernel:bootmenu"] = "seen";
           const q = new URLSearchParams(search);
-          const d = decideBoot(sig({ storedMode, menuSeen, anchor: hash, modeParam: q.get("mode"), forceBoot: q.get("boot") === "1" }));
+          const d = decideBoot(sig({ storedMode, anchor: hash, modeParam: q.get("mode"), forceBoot: q.get("boot") === "1" }));
           const r = runScript({ search, hash, storage });
           const label = JSON.stringify({ storedMode, menuSeen, search, hash });
           expect(r.boot === "on", label).toBe(d.show);

@@ -41,7 +41,7 @@ export function BootOverlay() {
     if (root.dataset.boot !== "on") return;
     const q = new URLSearchParams(window.location.search);
     const d = decideBoot({
-      ...readBootPrefs(),
+      storedMode: readBootPrefs().storedMode,
       referrer: document.referrer,
       cmdParam: q.get("cmd"),
       modeParam: q.get("mode"),
@@ -52,8 +52,6 @@ export function BootOverlay() {
     });
     if (q.get("boot") === "1") window.history.replaceState(null, "", "/");
     if (!d.show) {
-      // Hydrated after the cover lifted (slow device): settle on the recruiter view so the cover is not repeated every visit.
-      if (d.target === "human" && !q.get("mode") && !q.get("cmd") && !readBootPrefs().menuSeen) kernel.setMode("human");
       delete root.dataset.boot;
       return;
     }

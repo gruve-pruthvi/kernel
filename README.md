@@ -4,7 +4,7 @@ An interactive developer portfolio: inspectable **Systems** (architecture, decis
 
 ## Boot modes
 
-First visit to `/` shows a bootloader: **Just show me the work** (recruiter view, preselected) or **Give me a shell**. It boots the preselected option after 3 s (2 s on touch devices); arrow keys or moving the pointer over the menu stop the countdown. Visitors arriving from GitHub, Hacker News, dev.to, Lobsters or Stack Overflow get the shell preselected. Returning visitors go straight to their last mode.
+Every load of `/` shows a bootloader: **Just show me the work** (recruiter view, preselected) or **Give me a shell**. It boots the preselected option after 3 s (2 s on touch devices); arrow keys or moving the pointer over the menu stop the countdown. Visitors arriving from GitHub, Hacker News, dev.to, Lobsters or Stack Overflow get the shell preselected. Returning visitors get their last mode preselected.
 
 - Switch any time: the `human · shell` pill in the header, `` ` `` on any page for a drop-down console, `exit` / `human` in the shell.
 - Links: `/` (adaptive), `/?mode=human`, `/?mode=shell`, `/shell?cmd=run%20atlas`, `/?boot=1` (always show the bootloader — handy for demos).

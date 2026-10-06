@@ -23,7 +23,6 @@ export function isLateHydration(now: number, bootAt: string | undefined): boolea
 
 export interface BootSignals {
   storedMode: Mode | null;
-  menuSeen: boolean;
   referrer: string;
   cmdParam: string | null;
   modeParam: string | null;
@@ -52,6 +51,7 @@ function referrerHost(referrer: string): string {
 function preselectFor(s: BootSignals): Mode {
   if (isMode(s.modeParam)) return s.modeParam;
   if (s.cmdParam) return "shell";
+  if (s.storedMode) return s.storedMode; // the visitor's own last choice beats where they came from
   const host = referrerHost(s.referrer);
   if (DEV_HOSTS.some((h) => host === h || host.endsWith(`.${h}`))) return "shell";
   return "human";
@@ -66,7 +66,6 @@ export function decideBoot(s: BootSignals): BootDecision {
   if (explicit) return { show: false, preselect, countdownMs, target: preselect };
   if (s.anchor.length > 1) return { show: false, preselect, countdownMs, target: "human" };
   if (s.lateHydration) return { show: false, preselect, countdownMs, target: "human" };
-  if (s.menuSeen && s.storedMode) return { show: false, preselect, countdownMs, target: s.storedMode };
   return { show: true, preselect, countdownMs, target: preselect };
 }
 
@@ -108,14 +107,10 @@ export function bootLogItems(lines: BootLine[]): OutputItem[] {
 export function bootScript(): string {
   return `(function(){try{var d=document.documentElement,l=location;if(l.pathname!=="/")return;var q=new URLSearchParams(l.search);
 var on=function(){d.dataset.bootAt=String(Math.round(typeof performance!=="undefined"?performance.now():0));d.dataset.boot="on"};
-var g=function(k){try{return localStorage.getItem(k)}catch(e){return null}};
 var p=function(k,v){try{localStorage.setItem(k,v)}catch(e){}};
 if(q.get("boot")==="1"){on();return}
 var m=q.get("mode");if(m==="human"||m==="shell"){p("${MODE_KEY}",m);p("${MENU_KEY}","seen");if(m==="shell")l.replace("/shell");return}
-var s=g("${MODE_KEY}"),seen=g("${MENU_KEY}")==="seen";
 if(l.hash&&l.hash!=="#")return;
-if(seen&&s==="shell"){l.replace("/shell");return}
-if(seen&&s==="human")return;
 on()}catch(e){}})();`;
 }
 
