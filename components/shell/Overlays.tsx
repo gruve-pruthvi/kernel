@@ -18,7 +18,7 @@ export function Overlays() {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        if (pathname !== "/") router.push("/");
+        if (pathname !== "/shell") router.push("/shell");
         else document.querySelector<HTMLInputElement>('input[aria-label="Kernel shell input"]')?.focus();
         return;
       }
@@ -26,7 +26,7 @@ export function Overlays() {
         kernel.closeQuery();
         return;
       }
-      if (e.key === "/" && pathname !== "/" && !isTyping(e.target)) {
+      if (e.key === "/" && pathname !== "/shell" && !isTyping(e.target)) {
         e.preventDefault();
         kernel.openQuery();
       }

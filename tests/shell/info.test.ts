@@ -38,7 +38,7 @@ describe("help", () => {
     const text = run("help").text;
     for (const g of ["NAVIGATION", "FILES", "SEARCH", "INFO"]) expect(text).toContain(g);
     expect(run("help shortcuts").text).toContain("Ctrl+R");
-    expect(run("help links").text).toContain("/?cmd=");
+    expect(run("help links").text).toContain("/shell?cmd=");
     expect(run("help nope").text).toBe("help: no topic nope\ntopics: navigation, search, shortcuts, links");
   });
 });
@@ -48,7 +48,7 @@ describe("history", () => {
     const res = seq("ls", "pwd", "history");
     expect(textOf(res.output)).toBe("   1  ls  ↗\n   2  pwd  ↗\n   3  history  ↗");
     const first = res.output[0];
-    expect("line" in first && first.line.find((s) => s.href)?.href).toBe("/?cmd=ls");
+    expect("line" in first && first.line.find((s) => s.href)?.href).toBe("/shell?cmd=ls");
     expect("line" in first && first.line.find((s) => s.run)?.run).toBe("ls");
   });
 

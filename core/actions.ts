@@ -12,7 +12,7 @@ export const uiActionSchema = z.discriminatedUnion("type", [
 
 export type UiAction = z.infer<typeof uiActionSchema>;
 
-export const INTERNAL_ROUTES = ["/", "/systems", "/graph", "/trace", "/human", "/connect"] as const;
+export const INTERNAL_ROUTES = ["/", "/shell", "/systems", "/graph", "/trace", "/connect"] as const;
 
 function isInternalPath(path: string, p: Portfolio): boolean {
   if ((INTERNAL_ROUTES as readonly string[]).includes(path)) return true;

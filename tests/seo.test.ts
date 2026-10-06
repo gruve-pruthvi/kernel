@@ -22,7 +22,8 @@ describe("sitemap", () => {
   it("lists the shell, gui pages and every system", () => {
     process.env.NEXT_PUBLIC_SITE_URL = "https://kernel.example.dev";
     const urls = sitemap().map((e) => e.url);
-    for (const path of ["", "/systems", "/graph", "/trace", "/human", "/connect"]) expect(urls).toContain(`https://kernel.example.dev${path}`);
+    for (const path of ["", "/shell", "/systems", "/graph", "/trace", "/connect"]) expect(urls).toContain(`https://kernel.example.dev${path}`);
+    expect(urls).not.toContain("https://kernel.example.dev/human");
     for (const s of portfolio.systems) expect(urls).toContain(`https://kernel.example.dev/systems/${s.slug}`);
   });
 });

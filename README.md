@@ -17,7 +17,7 @@ Try `ls`, `cd systems/atlas`, `cat decisions.md`, `run atlas`, `grep -i rag . | 
 
 Engineering introspection: `git log [system] [--oneline]`, `git show <hash>`, `git branch`, `diff atlas relay`, `status`, `ps`, `top`, `env`, `benchmark <system>` (prints only measurements you add as `benchmarks` in a system's content), `graph --depth 2 atlas`. Ask with `ask <question>` or just type it — answers are followed by a clickable tree of related systems. `open atlas --full` jumps to the visual case study.
 
-**Share a demo:** any command can be a link — `https://<your-site>/?cmd=run%20atlas` or `/?cmd=man%20atlas` (up to 5 commands separated by `;`).
+**Share a demo:** any command can be a link — `https://<your-site>/shell?cmd=run%20atlas` or `/shell?cmd=man%20atlas` (up to 5 commands separated by `;`).
 
 Shortcuts: Tab completes (press again for a menu; Tab/Shift+Tab cycle), → accepts the grey history/completion suggestion, ↑/↓ history, Ctrl+R search, Ctrl+A/E/U/W editing, Ctrl+C cancel, Ctrl+L clear, Esc closes the side pane.
 
@@ -82,7 +82,7 @@ Nothing has been published yet. When the real content is in:
    | `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` | optional | enables analytics for that domain |
 
 5. **Redeploy** so the variables apply, then smoke-test:
-   `/`, `/?cmd=man%20kernel`, `/?cmd=run%20atlas`, `/systems`, `/opengraph-image`, `/sitemap.xml`, and ask a question in the shell (status bar should read `ai:online`).
+   `/`, `/shell`, `/?cmd=man%20kernel` (should redirect to `/shell`), `/shell?cmd=run%20atlas`, `/systems`, `/opengraph-image`, `/sitemap.xml`, and ask a question in the shell (status bar should read `ai:online`).
 6. Optional: add a custom domain in Vercel → Domains, then update `NEXT_PUBLIC_SITE_URL`.
 
 ## Analytics (optional)

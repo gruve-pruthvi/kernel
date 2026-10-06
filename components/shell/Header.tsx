@@ -11,7 +11,7 @@ const LINKS = [
   { href: "/systems", label: "Systems" },
   { href: "/graph", label: "Graph" },
   { href: "/trace", label: "Trace" },
-  { href: "/human", label: "Human" },
+  { href: "/#human", label: "Human" },
   { href: "/connect", label: "Connect" },
 ];
 
@@ -21,7 +21,7 @@ export function Header() {
   // eslint-disable-next-line react-hooks/set-state-in-effect -- close the mobile menu on navigation
   useEffect(() => setMenuOpen(false), [pathname]);
 
-  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+  const isActive = (href: string) => !href.includes("#") && (pathname === href || pathname.startsWith(`${href}/`));
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-bg/85 backdrop-blur">
@@ -52,7 +52,7 @@ export function Header() {
             Ask <Kbd>/</Kbd>
           </button>
           <Link
-            href="/"
+            href="/shell"
             aria-label="Open the Kernel shell (⌘K)"
             className="hidden items-center gap-1.5 rounded-md px-2 py-1.5 font-mono text-xs text-muted transition hover:bg-surface-2 hover:text-text sm:inline-flex"
           >
@@ -84,7 +84,7 @@ export function Header() {
             </Link>
           ))}
           <div className="mt-2 flex gap-2 border-t border-border pt-3">
-            <Link href="/" className="font-mono text-xs text-muted">
+            <Link href="/shell" className="font-mono text-xs text-muted">
               Shell
             </Link>
           </div>

@@ -35,7 +35,7 @@ const open: Command = {
     const isPage = (GUI_PAGES as readonly string[]).includes(page) && page !== "graph";
     const local = resolve(ctx.fs, ctx.state.cwd, target);
     // A page name wins unless the user is inside a directory where that name is a real entry.
-    if (isPage && (!local || ctx.state.cwd.length === 0)) return { effects: [{ type: "navigate", href: `/${page}` }] };
+    if (isPage && (!local || ctx.state.cwd.length === 0)) return { effects: [{ type: "navigate", href: page === "human" ? "/#human" : `/${page}` }] };
     const node = local;
     if (!node) return fail(`open: cannot find "${target}"`);
     if (node.kind === "view") return { effects: [{ type: "openView", view: node.view }] };
@@ -111,13 +111,13 @@ const gui: Command = {
   group: "actions",
   summary: "switch to the visual site",
   usage: "gui [systems | graph | trace | human | connect]",
-  description: ["Opens a page of the visual (non-terminal) site. Type `>_ shell` there, or press ⌘K, to come back."],
+  description: ["Opens a page of the visual site (the recruiter view). Press the backtick key there for a drop-down shell, or ⌘K to come back here."],
   examples: ["gui", "gui trace"],
   seeAlso: ["open", "recruiter"],
   run(args) {
     const page = PAGE_ALIASES[args[0]?.toLowerCase() ?? ""] ?? args[0]?.toLowerCase() ?? "systems";
     if (!(GUI_PAGES as readonly string[]).includes(page)) return fail(`gui: no page ${args[0]}`, `pages: ${GUI_PAGES.join(", ")}`);
-    return { effects: [{ type: "navigate", href: `/${page}` }] };
+    return { effects: [{ type: "navigate", href: page === "human" ? "/#human" : `/${page}` }] };
   },
 };
 

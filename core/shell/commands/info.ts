@@ -159,8 +159,8 @@ const TOPICS: Record<string, OutputItem[]> = {
   links: [
     h("LINKS"),
     body("Any command can be shared as a link — it runs when the page opens:"),
-    body([seg("/?cmd=man%20atlas", "accent")]),
-    body([seg("/?cmd=run%20atlas", "accent")]),
+    body([seg("/shell?cmd=man%20atlas", "accent")]),
+    body([seg("/shell?cmd=run%20atlas", "accent")]),
     body("Separate several commands with ; (up to 5). In `history`, every ↗ is a link to that command."),
   ],
 };

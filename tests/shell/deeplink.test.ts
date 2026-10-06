@@ -24,6 +24,6 @@ describe("parseDeepLink", () => {
     expect(parseDeepLink(`?cmd=${encodeURIComponent(`echo 'x;y';pwd;;`)}`).commands).toEqual([`echo 'x;y'`, "pwd"]);
   });
   it("builds links", () => {
-    expect(deepLinkFor("grep -i rag .")).toBe("/?cmd=grep%20-i%20rag%20.");
+    expect(deepLinkFor("grep -i rag .")).toBe("/shell?cmd=grep%20-i%20rag%20.");
   });
 });

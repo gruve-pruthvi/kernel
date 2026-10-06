@@ -84,7 +84,7 @@ function buildIndex(p: Portfolio): SearchDoc[] {
         ...e.commits.flatMap((c) => [c.message, c.body ?? ""]),
       ]),
     ),
-    doc("identity", "identity", p.identity.name, "/human", [
+    doc("identity", "identity", p.identity.name, "/#human", [
       p.identity.role,
       p.identity.tagline,
       p.identity.summary,

@@ -51,6 +51,8 @@ describe("graph / git / gui / recruiter / clear / easter eggs", () => {
   it("gui, recruiter, clear", () => {
     expect(run("gui").res.effects).toEqual([{ type: "navigate", href: "/systems" }]);
     expect(run("gui trace").res.effects).toEqual([{ type: "navigate", href: "/trace" }]);
+    expect(run("gui human").res.effects).toEqual([{ type: "navigate", href: "/#human" }]);
+    expect(run("gui about").res.effects).toEqual([{ type: "navigate", href: "/#human" }]);
     expect(run("gui nope").text).toBe("gui: no page nope\npages: systems, graph, trace, human, connect");
     expect(run("recruiter").res.effects).toEqual([{ type: "mode", mode: "human" }]);
     expect(run("clear").res.effects).toEqual([{ type: "clear" }]);

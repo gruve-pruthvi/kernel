@@ -44,4 +44,4 @@ export function parseDeepLink(search: string): DeepLink {
   return { commands, notices };
 }
 
-export const deepLinkFor = (command: string) => `/?cmd=${encodeURIComponent(command)}`;
+export const deepLinkFor = (command: string) => `/shell?cmd=${encodeURIComponent(command)}`;
