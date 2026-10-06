@@ -63,7 +63,7 @@ export function QueryPanel() {
       const history = [
         ...messagesRef.current
           .filter((m) => m.content && !m.error)
-          .map((m) => ({ role: m.role, content: m.content.slice(0, 4000) })),
+          .map((m) => ({ role: m.role, content: m.content.slice(0, 1500) })),
         { role: "user" as const, content: question },
       ].slice(-12);
       while (history.length > 1 && history[0].role !== "user") history.shift();

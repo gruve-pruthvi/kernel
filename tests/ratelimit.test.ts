@@ -35,4 +35,14 @@ describe("createRateLimiter", () => {
     t = 61_000;
     expect(rl.check("a").ok).toBe(true);
   });
+
+  it("evicts the oldest key instead of clearing", () => {
+    const rl = createRateLimiter({ perMinute: 1, perDay: 10, now: () => 0, maxKeys: 2 });
+    expect(rl.check("a").ok).toBe(true);
+    expect(rl.check("b").ok).toBe(true);
+    expect(rl.check("b").ok).toBe(false);
+    expect(rl.check("c").ok).toBe(true); // evicts "a" (oldest), not everyone
+    expect(rl.check("b").ok).toBe(false); // b is still limited
+    expect(rl.check("a").ok).toBe(true); // a was forgotten
+  });
 });

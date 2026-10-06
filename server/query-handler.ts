@@ -7,6 +7,8 @@ import type { Portfolio } from "@/core/schema";
 
 export const MAX_MESSAGES = 12;
 export const MAX_USER_CHARS = 500;
+export const MAX_ASSISTANT_CHARS = 1500;
+export const MAX_ASSISTANT_TURNS = 6;
 
 export const queryRequestSchema = z
   .object({
@@ -19,7 +21,12 @@ export const queryRequestSchema = z
   .refine(
     (b) => b.messages.every((m) => m.role !== "user" || m.content.length <= MAX_USER_CHARS),
     `user messages are limited to ${MAX_USER_CHARS} characters`,
-  );
+  )
+  .refine(
+    (b) => b.messages.every((m) => m.role !== "assistant" || m.content.length <= MAX_ASSISTANT_CHARS),
+    `assistant messages are limited to ${MAX_ASSISTANT_CHARS} characters`,
+  )
+  .refine((b) => b.messages.filter((m) => m.role === "assistant").length <= MAX_ASSISTANT_TURNS, "too many assistant turns");
 
 export type QueryEvent =
   | { type: "meta"; mode: "ai" | "local"; sources: Source[] }
@@ -63,8 +70,11 @@ const tools = {
 const json = (status: number, body: unknown, headers: Record<string, string> = {}) =>
   new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", ...headers } });
 
-function clientKey(req: Request): string {
-  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "anonymous";
+export function clientKey(req: Request): string {
+  const real = req.headers.get("x-real-ip")?.trim();
+  if (real) return real;
+  const hops = req.headers.get("x-forwarded-for")?.split(",").map((h) => h.trim()).filter(Boolean) ?? [];
+  return hops[hops.length - 1] ?? "anonymous";
 }
 
 export async function handleQuery(req: Request, deps: QueryDeps): Promise<Response> {
@@ -130,7 +140,7 @@ export async function handleQuery(req: Request, deps: QueryDeps): Promise<Respon
             sentText = true;
             send({ type: "text", text: part.text });
           } else if (part.type === "tool-call") {
-            const action = validateAction({ type: part.toolName, ...(part.input as object) }, portfolio);
+            const action = validateAction({ ...(part.input as object), type: part.toolName }, portfolio);
             if (!action) continue;
             if (!emitted) send({ type: "meta", mode: "ai", sources: toSources(results) });
             emitted = true;
@@ -145,7 +155,10 @@ export async function handleQuery(req: Request, deps: QueryDeps): Promise<Respon
         }
       } catch (err) {
         console.error("[kernel] query model error:", err instanceof Error ? err.message : err);
-        if (emitted) send({ type: "error", message: "The answer was interrupted. Try again in a moment." });
+        if (emitted) {
+          send({ type: "error", message: "The answer was interrupted. Try again in a moment." });
+          for (const action of localAnswer(portfolio, question).suggestions) send({ type: "suggestion", action });
+        }
         else sendLocal();
       }
       send({ type: "done" });

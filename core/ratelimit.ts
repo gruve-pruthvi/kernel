@@ -4,8 +4,9 @@ const MINUTE = 60_000;
 const DAY = 24 * 60 * MINUTE;
 const MAX_KEYS = 10_000;
 
-export function createRateLimiter(opts: { perMinute: number; perDay: number; now?: () => number }) {
+export function createRateLimiter(opts: { perMinute: number; perDay: number; now?: () => number; maxKeys?: number }) {
   const now = opts.now ?? Date.now;
+  const maxKeys = opts.maxKeys ?? MAX_KEYS;
   const hits = new Map<string, number[]>();
 
   return {
@@ -23,7 +24,10 @@ export function createRateLimiter(opts: { perMinute: number; perDay: number; now
         return { ok: false, reason: "day", retryAfterSec: Math.ceil((recent[0] + DAY - t) / 1000) };
       }
 
-      if (!hits.has(key) && hits.size >= MAX_KEYS) hits.clear();
+      if (!hits.has(key) && hits.size >= maxKeys) {
+        const oldest = hits.keys().next().value;
+        if (oldest !== undefined) hits.delete(oldest);
+      }
       recent.push(t);
       hits.set(key, recent);
       return { ok: true };
