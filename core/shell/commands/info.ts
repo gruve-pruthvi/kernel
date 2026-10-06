@@ -298,4 +298,22 @@ const exportCmd: Command = {
   },
 };
 
-export const infoCommands = [man, help, history, whoami, id, resume, exportCmd];
+const ask: Command = {
+  name: "ask",
+  group: "info",
+  summary: "ask Kernel's AI about this portfolio",
+  usage: "ask <question…>",
+  description: [
+    "Answers from this portfolio's content only (Gemini when configured, local search otherwise), then lists the related systems and the parts that match.",
+    "You can also just type a question — `ask` is optional.",
+  ],
+  examples: ["ask what has been built with agents?", 'ask "how does atlas stay grounded?"'],
+  seeAlso: ["grep", "man"],
+  run(args) {
+    const question = args.join(" ").trim();
+    if (!question) return fail("ask: missing question", `usage: ${this.usage}`);
+    return { effects: [{ type: "ask", question }] };
+  },
+};
+
+export const infoCommands = [man, help, history, whoami, id, resume, exportCmd, ask];

@@ -28,6 +28,7 @@ export function isQuestion(line: string): boolean {
   if (/[|;]/.test(line)) return false;
   const words = line.trim().split(/\s+/);
   const first = words[0];
+  if (first.toLowerCase() === "ask") return false;
   const prose = words.every((w) => PROSE_WORD.test(w)) && !words.slice(1).some((w) => w.startsWith("-"));
   const asked = /\?$/.test(line);
   if (getCommand(first)) return asked && words.length >= 3 && prose;
