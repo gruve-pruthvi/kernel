@@ -181,3 +181,44 @@ body {
     transform: translateY(-100%);
   }
 }
+
+/*
+ * Bootloader. The pre-paint script sets data-boot="on" on first visits: cover the page until the overlay hydrates
+ * (it then sets "live"). If JS is slow the cover removes itself after 1.5 s and the page stays readable.
+ */
+:root[data-boot="on"] body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: var(--bg);
+  animation: kernel-boot-watchdog 0s linear 1.5s forwards;
+}
+@keyframes kernel-boot-watchdog {
+  to {
+    visibility: hidden;
+  }
+}
+:root[data-boot="live"] body {
+  overflow: hidden;
+}
+
+/* Boot morph: boot-log lines fly into the hero name and the system cards (names only once the overlay is gone). */
+.vt-boot {
+  view-transition-name: var(--vt);
+  view-transition-class: boot;
+}
+:root[data-boot] .vt-boot {
+  view-transition-name: none;
+}
+::view-transition-group(.boot) {
+  animation-duration: 520ms;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+/* The terminal snapshot fades out early so the flight never shows stretched monospace text. */
+::view-transition-old(.boot) {
+  animation-duration: 160ms;
+}
+::view-transition-new(.boot) {
+  animation-duration: 420ms;
+}

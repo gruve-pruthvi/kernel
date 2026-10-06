@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { Analytics } from "@/components/shell/Analytics";
 import { Overlays } from "@/components/shell/Overlays";
+import { bootScript } from "@/core/boot";
 import { getIdentity } from "@/core/content";
 import { siteUrl } from "@/lib/site";
 import "./globals.css";
@@ -27,6 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" data-theme="dark" className={`${inter.variable} ${mono.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script dangerouslySetInnerHTML={{ __html: bootScript() }} />
       </head>
       <body className="min-h-dvh bg-bg text-text antialiased">
         <a
