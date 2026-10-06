@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
+import { Analytics } from "@/components/shell/Analytics";
 import { Overlays } from "@/components/shell/Overlays";
 import { getIdentity } from "@/core/content";
+import { siteUrl } from "@/lib/site";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -10,8 +12,11 @@ const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains" }
 const identity = getIdentity();
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl()),
   title: { default: "Kernel", template: "%s · Kernel" },
   description: `${identity.role}. ${identity.tagline}`,
+  openGraph: { type: "website", title: `${identity.name} — Kernel`, description: identity.tagline, siteName: "Kernel" },
+  twitter: { card: "summary_large_image", title: `${identity.name} — Kernel`, description: identity.tagline },
 };
 
 // Runs before paint: restores theme + recruiter mode and sets the browser chrome colour from the site theme.
@@ -32,6 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </a>
         {children}
         <Overlays />
+        <Analytics />
       </body>
     </html>
   );
