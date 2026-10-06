@@ -3,6 +3,11 @@ import { portfolio } from "@/core/content";
 import { run } from "./helpers";
 
 describe("open", () => {
+  it("opens the full case study with --full", () => {
+    expect(run("open atlas --full").res.effects).toEqual([{ type: "navigate", href: "/systems/atlas" }]);
+    expect(run("open graph --full").res.effects).toEqual([{ type: "openView", view: { type: "graph", focus: [] } }]);
+  });
+
   it("opens systems, views, files, pages and the resume", () => {
     expect(run("open atlas").res.effects).toEqual([{ type: "openView", view: { type: "architecture", slug: "atlas" } }]);
     expect(run("open graph").res.effects).toEqual([{ type: "openView", view: { type: "graph", focus: [] } }]);

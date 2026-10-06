@@ -14,13 +14,18 @@ const open: Command = {
   description: [
     "Opens a system's architecture, the skill graph or a file in the side pane; a page (trace, human, contact) in the visual site; or downloads the resume.",
   ],
-  examples: ["open atlas", "open graph", "open resume", "open trace"],
+  flags: { full: { describe: "for a system, open the full visual case study instead of the side pane" } },
+  examples: ["open atlas", "open atlas --full", "open graph", "open resume", "open trace"],
   seeAlso: ["less", "gui", "graph"],
-  run(args, _flags, ctx) {
+  run(args, flags, ctx) {
     const target = args[0];
     if (!target) return fail("open: missing target", `usage: ${this.usage}`);
     const t = target.toLowerCase().replace(/\/+$/, "");
-    if (ctx.p.systems.some((s) => s.slug === t)) return { effects: [{ type: "openView", view: { type: "architecture", slug: t } }] };
+    if (ctx.p.systems.some((s) => s.slug === t)) {
+      return flags.full
+        ? { effects: [{ type: "navigate", href: `/systems/${t}` }] }
+        : { effects: [{ type: "openView", view: { type: "architecture", slug: t } }] };
+    }
     if (t === "graph") return { effects: [{ type: "openView", view: { type: "graph", focus: [] } }] };
     if (t === "resume" || t === "resume.pdf") {
       const href = ctx.p.identity.links.resume;

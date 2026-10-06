@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, ViewTransition } from "react";
 import { ArchitectureDiagram } from "@/components/architecture/ArchitectureDiagram";
 import { getSystem, portfolio } from "@/core/content";
 import { neighbours, type GraphEdge } from "@/core/graph";
@@ -71,9 +71,14 @@ function ArchitecturePane({
   const shown = system.architecture.nodes.find((n) => n.id === (hover ?? activeId));
   return (
     <div className="space-y-3">
-      <div className="overflow-x-auto rounded border border-border bg-bg [&_svg]:min-w-0">
-        <ArchitectureDiagram architecture={system.architecture} focusId={hover} activeId={activeId} motion={motion} onHover={setHover} onSelect={setHover} />
-      </div>
+      <ViewTransition name={`system-title-${slug}`} share="morph" default="none">
+        <h3 className="text-sm font-semibold text-text">{system.name}</h3>
+      </ViewTransition>
+      <ViewTransition name={`system-arch-${slug}`} share="morph" default="none">
+        <div className="overflow-x-auto rounded border border-border bg-bg [&_svg]:min-w-0">
+          <ArchitectureDiagram architecture={system.architecture} focusId={hover} activeId={activeId} motion={motion} onHover={setHover} onSelect={setHover} />
+        </div>
+      </ViewTransition>
       <div className="min-h-16 rounded border border-border p-3 text-[12px] leading-5" aria-live="polite">
         {shown ? (
           <>

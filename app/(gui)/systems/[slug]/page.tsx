@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ViewTransition } from "react";
 import { notFound } from "next/navigation";
 import { ArchitectureExplorer } from "@/components/architecture/ArchitectureExplorer";
 import { AskButton } from "@/components/home/AskButton";
@@ -50,7 +51,9 @@ export default async function SystemPage({ params }: Props) {
           )}
           <SampleTag show={system.placeholder} />
         </div>
-        <h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">{system.name}</h1>
+        <ViewTransition name={`system-title-${system.slug}`} share="morph" default="none">
+          <h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">{system.name}</h1>
+        </ViewTransition>
         <p className="mt-3 max-w-2xl text-lg text-muted">{system.tagline}</p>
         <p className="mt-6 max-w-3xl leading-relaxed text-text">{system.summary}</p>
         <div className="mt-6 flex flex-wrap gap-1.5">
@@ -88,7 +91,11 @@ export default async function SystemPage({ params }: Props) {
       </Section>
 
       <Section id="architecture" label="02 · Architecture" title="Inspect the system">
-        <ArchitectureExplorer architecture={system.architecture} simulation={system.simulation} techNames={techNames} />
+        <ViewTransition name={`system-arch-${system.slug}`} share="morph" default="none">
+          <div>
+            <ArchitectureExplorer architecture={system.architecture} simulation={system.simulation} techNames={techNames} />
+          </div>
+        </ViewTransition>
       </Section>
 
       {system.decisions.length > 0 && (

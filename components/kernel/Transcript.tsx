@@ -20,7 +20,9 @@ export const TONE: Record<Tone, string> = {
   match: "bg-accent-soft text-accent",
 };
 
-export type Row = { id: number; kind: "prompt"; cwd: string[]; text: string } | { id: number; kind: "item"; item: OutputItem };
+export type Row =
+  | { id: number; kind: "prompt"; cwd: string[]; text: string }
+  | { id: number; kind: "item"; item: OutputItem; live?: boolean };
 
 export function SegView({ seg, onRun }: { seg: Seg; onRun: (command: string) => void }) {
   const cls = TONE[seg.tone ?? "text"];

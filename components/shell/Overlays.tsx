@@ -19,6 +19,7 @@ export function Overlays() {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         if (pathname !== "/") router.push("/");
+        else document.querySelector<HTMLInputElement>('input[aria-label="Kernel shell input"]')?.focus();
         return;
       }
       if (e.key === "Escape") {

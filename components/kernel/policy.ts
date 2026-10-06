@@ -1,7 +1,9 @@
 // Pure UI policy for the shell — unit-tested, imported by Shell.tsx.
 
-export function splitRows<T extends { live?: boolean }>(rows: T[]): { settled: T[]; live: T[] } {
-  return { settled: rows.filter((r) => !r.live), live: rows.filter((r) => r.live) };
+/** In-progress rows (progress bars, streaming text) stay out of the live region until they settle. */
+export function splitRows<T extends object>(rows: T[]): { settled: T[]; live: T[] } {
+  const isLive = (r: T) => "live" in r && Boolean((r as { live?: boolean }).live);
+  return { settled: rows.filter((r) => !isLive(r)), live: rows.filter(isLive) };
 }
 
 export const optionId = (listId: string, index: number) => `${listId}-${index}`;

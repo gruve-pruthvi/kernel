@@ -1,31 +1,38 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState, ViewTransition } from "react";
 import { createLineDecoder } from "@/components/query/stream";
 import { validateAction, type UiAction } from "@/core/actions";
 import { getSystem, portfolio } from "@/core/content";
 import type { GraphEdge } from "@/core/graph";
 import type { PositionedNode } from "@/core/graph-layout";
+import { commandName } from "@/core/shell/analytics";
 import { COMMANDS } from "@/core/shell/commands";
 import { autosuggest, commonPrefix, complete, describeCandidates, type MenuItem } from "@/core/shell/complete";
 import { parseDeepLink } from "@/core/shell/deeplink";
 import { execute, HISTORY_LIMIT, initialState } from "@/core/shell/execute";
+import { explain, explainLines } from "@/core/shell/explain";
 import { pathOf } from "@/core/shell/fs";
 import { out, seg } from "@/core/shell/registry";
 import { styleLine } from "@/core/shell/style";
-import type { Effect, HistoryEntry, OutputItem, ShellState, View } from "@/core/shell/types";
+import type { Effect, HistoryEntry, OutputItem, RuntimeEnv, Seg, ShellState, View } from "@/core/shell/types";
 import { bootLines } from "@/core/shell/welcome";
-import { kernel } from "@/lib/store";
+import { track } from "@/lib/analytics";
+import { kernel, useKernel } from "@/lib/store";
 import { useMotionAllowed } from "@/lib/use-motion-allowed";
 import type { QueryEvent } from "@/server/query-handler";
 import { blockWhileBusy, tabDecision } from "./keys";
+import { comboboxProps, drainCount, mobileKeys, optionId, splitRows, type MobileKeyId } from "./policy";
 import { PromptText, Transcript, type Row } from "./Transcript";
 import { ViewPane } from "./ViewPane";
 
 const HISTORY_KEY = "kernel:history";
 const BOOT_KEY = "kernel:booted";
+const LIST_ID = "kernel-completions";
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+const nextFrame = () => new Promise<number>((r) => requestAnimationFrame(r));
 
 function loadHistory(): HistoryEntry[] {
   try {
@@ -47,16 +54,20 @@ function saveHistory(history: HistoryEntry[]) {
   }
 }
 
+const answerLine = (text: string, suffix: Seg[] = []): OutputItem => ({
+  line: [seg("▸ ", "accent"), ...(text || "…").split("\n").flatMap((l, i) => [...(i ? [seg("\n")] : []), ...styleLine(l)]), ...suffix],
+});
+
 type Pane = { view: View; activeId: string | null } | null;
 type Search = { query: string; skip: number };
+type Ai = RuntimeEnv["ai"];
 
 export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; edges: GraphEdge[] }; initial: OutputItem[] }) {
   const router = useRouter();
   const motion = useMotionAllowed();
+  const theme = useKernel((s) => s.theme);
+  const recruiter = useKernel((s) => s.recruiter);
   const motionRef = useRef(motion);
-  useEffect(() => {
-    motionRef.current = motion;
-  }, [motion]);
 
   const idRef = useRef(initial.length);
   const [rows, setRows] = useState<Row[]>(() => initial.map((item, i) => ({ id: i + 1, kind: "item", item })));
@@ -70,23 +81,38 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
   const [menu, setMenu] = useState<{ items: MenuItem[]; index: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
-  const [pane, setPane] = useState<Pane>(null);
-  const [ai, setAi] = useState<"ready" | "online" | "offline">("ready");
+  const [pane, setPaneState] = useState<Pane>(null);
+  const [ai, setAi] = useState<Ai>("unknown");
   const [clock, setClock] = useState("");
+  const envRef = useRef<RuntimeEnv>({ theme: "dark", motion: "full", recruiter: false, ai: "unknown", pane: null });
   const cancel = useRef<{ cancelled: boolean; abort?: AbortController }>({ cancelled: false });
   const aiHistory = useRef<{ role: "user" | "assistant"; content: string }[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const started = useRef(false);
 
-  const add = useCallback((items: OutputItem[]) => {
-    const created: Row[] = items.map((item) => ({ id: ++idRef.current, kind: "item", item }));
+  useEffect(() => {
+    motionRef.current = motion;
+    envRef.current = {
+      theme,
+      motion: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "reduced" : "full",
+      recruiter,
+      ai,
+      pane: pane?.view.type ?? null,
+    };
+  }, [motion, theme, recruiter, ai, pane]);
+
+  /** Pane open/close/switch animates (view transition); activeId changes during a simulation do not. */
+  const showPane = useCallback((next: Pane) => startTransition(() => setPaneState(next)), []);
+
+  const add = useCallback((items: OutputItem[], live = false) => {
+    const created: Row[] = items.map((item) => ({ id: ++idRef.current, kind: "item", item, ...(live ? { live } : {}) }));
     setRows((r) => [...r, ...created]);
     return created.map((c) => c.id);
   }, []);
 
-  const replace = useCallback((id: number, item: OutputItem) => {
-    setRows((r) => r.map((row) => (row.id === id ? { id, kind: "item", item } : row)));
+  const replace = useCallback((id: number, item: OutputItem, live = false) => {
+    setRows((r) => r.map((row) => (row.id === id ? { id, kind: "item", item, ...(live ? { live } : {}) } : row)));
   }, []);
 
   const typeOut = useCallback(
@@ -107,7 +133,7 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
-  }, [rows, busy, search]);
+  }, [rows, busy, search, menu]);
 
   useEffect(() => {
     const tick = () => setClock(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
@@ -128,57 +154,84 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
       const system = getSystem(slug);
       if (!system?.simulation) return;
       const W = 12;
-      setPane({ view: { type: "architecture", slug }, activeId: null });
+      showPane({ view: { type: "architecture", slug }, activeId: null });
       add([out(seg("▶ ", "accent"), seg(system.name, "heading"), seg(`  "${system.simulation.prompt}"`, "muted"))]);
       const t0 = performance.now();
       for (const step of system.simulation.steps) {
         if (cancel.current.cancelled) break;
-        setPane({ view: { type: "architecture", slug }, activeId: step.nodeId });
+        setPaneState({ view: { type: "architecture", slug }, activeId: step.nodeId });
         const label = seg(`  [${step.title}]`.padEnd(15), "accent");
-        const [rowId] = add([out(label, seg("─".repeat(W), "faint"), seg(`  ${step.detail}`, "muted"))]);
+        const [rowId] = add([out(label, seg("─".repeat(W), "faint"), seg(`  ${step.detail}`, "muted"))], true);
+        const bar = (filled: number, done: boolean) =>
+          out(label, seg("━".repeat(filled), "accent"), seg("─".repeat(W - filled), "faint"), seg(`  ${step.detail}`, done ? "text" : "muted"));
         const frames = motionRef.current ? W : 1;
+        let filled = 0;
         for (let f = 1; f <= frames; f++) {
           if (cancel.current.cancelled) break;
           if (motionRef.current) await sleep((step.durationMs * 0.7) / frames);
-          const filled = Math.round((f / frames) * W);
-          replace(rowId, out(label, seg("━".repeat(filled), "accent"), seg("─".repeat(W - filled), "faint"), seg(`  ${step.detail}`, f === frames ? "text" : "muted")));
+          filled = Math.round((f / frames) * W);
+          replace(rowId, bar(filled, false), true);
         }
+        replace(rowId, bar(filled, filled === W)); // settle into the log at its real progress
       }
-      setPane({ view: { type: "architecture", slug }, activeId: null });
+      setPaneState({ view: { type: "architecture", slug }, activeId: null });
       if (cancel.current.cancelled) add([out(seg("^C interrupted", "error"))]);
-      else add([out(seg(`  ✓ completed in ${((performance.now() - t0) / 1000).toFixed(1)}s`, "ok"), seg("  (simulated walkthrough)", "faint"))]);
+      else {
+        stateRef.current = { ...stateRef.current, stats: { ...stateRef.current.stats, simulations: stateRef.current.stats.simulations + 1 } };
+        add([out(seg(`  ✓ completed in ${((performance.now() - t0) / 1000).toFixed(1)}s`, "ok"), seg("  (simulated walkthrough)", "faint"))]);
+      }
     },
-    [add, replace],
+    [add, replace, showPane],
   );
 
   const applyAction = useCallback(
     (raw: UiAction) => {
       const a = validateAction(raw, portfolio);
-      if (!a) return;
-      if (a.type === "openSystem") setPane({ view: { type: "architecture", slug: a.slug }, activeId: null });
-      else if (a.type === "highlightGraph") setPane({ view: { type: "graph", focus: a.ids }, activeId: null });
-      else if (a.type === "filterSystems") setPane({ view: { type: "graph", focus: [a.tech ? `tech:${a.tech}` : `cap:${a.capability}`] }, activeId: null });
+      if (!a) {
+        if (process.env.NODE_ENV !== "production") console.debug("[kernel] dropped action", raw);
+        return;
+      }
+      if (a.type === "openSystem") showPane({ view: { type: "architecture", slug: a.slug }, activeId: null });
+      else if (a.type === "highlightGraph") showPane({ view: { type: "graph", focus: a.ids }, activeId: null });
+      else if (a.type === "filterSystems") showPane({ view: { type: "graph", focus: [a.tech ? `tech:${a.tech}` : `cap:${a.capability}`] }, activeId: null });
       else if (a.type === "navigate") {
         const system = /^\/systems\/([a-z0-9-]+)$/.exec(a.path);
-        if (system) setPane({ view: { type: "architecture", slug: system[1] }, activeId: null });
+        if (system) showPane({ view: { type: "architecture", slug: system[1] }, activeId: null });
         else {
           const page = a.path.replace(/^\//, "") || "systems";
           add([out(seg("  → ", "faint"), seg(`gui ${page}`, "accent", { run: `gui ${page}` }), seg(" to open it visually", "faint"))]);
         }
       } else add([out(seg("  → ", "faint"), seg("recruiter", "accent", { run: "recruiter" }), seg(" for the one-screen summary", "faint"))]);
     },
-    [add],
+    [add, showPane],
   );
 
   const ask = useCallback(
     async (question: string) => {
       const abort = new AbortController();
       cancel.current.abort = abort;
-      const [rowId] = add([out(seg("▸ ", "accent"), seg("thinking…", "faint"))]);
-      let text = "";
+      const [rowId] = add([out(seg("▸ ", "accent"), seg("thinking…", "faint"))], true);
+      let received = "";
+      let shown = 0;
+      let streaming = true;
       let sources: string[] = [];
-      const render = () =>
-        replace(rowId, { line: [seg("▸ ", "accent"), ...text.split("\n").flatMap((l, i) => [...(i ? [seg("\n")] : []), ...styleLine(l)])] });
+
+      // Typewriter: reveal the received text at a steady rate that catches up with bursts (instant without motion).
+      const pump = (async () => {
+        let last = performance.now();
+        while (streaming || shown < received.length) {
+          if (cancel.current.cancelled) return;
+          const now = await nextFrame();
+          const backlog = received.length - shown;
+          const n = motionRef.current ? drainCount(backlog, now - last) : backlog;
+          last = now;
+          if (n > 0) {
+            shown += n;
+            replace(rowId, answerLine(received.slice(0, shown)), true);
+          }
+        }
+      })();
+
       aiHistory.current = [...aiHistory.current, { role: "user" as const, content: question.slice(0, 500) }].slice(-10);
       try {
         const res = await fetch("/api/query", {
@@ -189,6 +242,8 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
         });
         if (!res.ok || !res.body) {
           const data = (await res.json().catch(() => ({}))) as { error?: string };
+          streaming = false;
+          await pump;
           replace(rowId, out(seg("▸ ", "error"), seg(data.error ?? "query failed — try again", "error")));
           aiHistory.current.pop();
           return;
@@ -199,10 +254,8 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
           if (e.type === "meta") {
             setAi(e.mode === "ai" ? "online" : "offline");
             sources = e.sources.slice(0, 4).map((s) => s.title);
-          } else if (e.type === "text") {
-            text += e.text;
-            render();
-          } else if (e.type === "action" || e.type === "suggestion") applyAction(e.action);
+          } else if (e.type === "text") received += e.text;
+          else if (e.type === "action" || e.type === "suggestion") applyAction(e.action);
           else if (e.type === "error") add([out(seg(e.message, "error"))]);
         });
         for (;;) {
@@ -211,11 +264,23 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
           lines.push(decoder.decode(value, { stream: true }));
         }
         lines.flush();
-        if (text) aiHistory.current = [...aiHistory.current, { role: "assistant" as const, content: text.slice(0, 1500) }];
+        streaming = false;
+        await pump;
+        if (cancel.current.cancelled) {
+          // Stopped while the typewriter was still revealing: keep what was shown.
+          replace(rowId, answerLine(received.slice(0, shown), [seg(" ^C", "faint")]));
+          aiHistory.current.pop();
+          return;
+        }
+        replace(rowId, answerLine(received));
+        if (received) aiHistory.current = [...aiHistory.current, { role: "assistant" as const, content: received.slice(0, 1500) }];
         else aiHistory.current.pop();
         if (sources.length) add([out(seg(`  sources: ${sources.join(" · ")}`, "faint"))]);
+        add(explainLines(explain(portfolio, question)));
       } catch {
-        replace(rowId, out(seg("▸ ", "error"), seg(cancel.current.cancelled ? "^C" : "network error — try again", "error")));
+        streaming = false;
+        if (cancel.current.cancelled) replace(rowId, answerLine(received.slice(0, shown), [seg(" ^C", "faint")]));
+        else replace(rowId, out(seg("▸ ", "error"), seg("network error — try again", "error")));
         aiHistory.current.pop();
       }
     },
@@ -226,10 +291,10 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
     async (e: Effect) => {
       switch (e.type) {
         case "openView":
-          setPane({ view: e.view, activeId: null });
+          showPane({ view: e.view, activeId: null });
           return;
         case "closeView":
-          setPane(null);
+          showPane(null);
           return;
         case "navigate":
           router.push(e.href);
@@ -255,7 +320,7 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
           return;
       }
     },
-    [ask, playSimulation, router],
+    [ask, playSimulation, router, showPane],
   );
 
   const run = useCallback(
@@ -272,8 +337,10 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
       setHistCursor(null);
       setSearch(null);
       setMenu(null);
+      const name = commandName(raw);
+      if (name) track("command", { command: name });
       try {
-        const res = execute(raw, stateRef.current, portfolio, Date.now(), { maxPipelines: 5 });
+        const res = execute(raw, stateRef.current, portfolio, Date.now(), { env: envRef.current });
         stateRef.current = res.state;
         setCwd(res.state.cwd);
         setHistoryList(res.state.history.map((h) => h.command));
@@ -292,7 +359,12 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
     [perform, typeOut],
   );
 
-  // ---------- boot + deep link ----------
+  const cancelRunning = () => {
+    cancel.current.cancelled = true;
+    cancel.current.abort?.abort();
+  };
+
+  // ---------- boot, AI status, deep links ----------
 
   useEffect(() => {
     if (started.current) return;
@@ -308,9 +380,13 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
       /* ignore */
     }
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    fetch("/api/status")
+      .then((r) => r.json() as Promise<{ ai?: boolean }>)
+      .then((d) => setAi(d.ai ? "online" : "offline"))
+      .catch(() => {});
     void (async () => {
       setHistoryList(restored);
-      if (firstVisit && !reduced && !link.line) {
+      if (firstVisit && !reduced && link.commands.length === 0) {
         busyRef.current = true;
         setBusy(true);
         let skipped = false;
@@ -328,10 +404,8 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
         busyRef.current = false;
         setBusy(false);
       }
-      if (link.line) {
-        if (link.truncated) add([out(seg("deep link truncated to 500 characters", "faint"))]);
-        await run(link.line);
-      }
+      for (const notice of link.notices) add([out(seg(notice, "faint"))]);
+      for (const command of link.commands) await run(command);
       inputRef.current?.focus({ preventScroll: true });
     })();
   }, [add, run]);
@@ -407,10 +481,8 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
     }
     if (ctrl && lower === "c") {
       e.preventDefault();
-      if (busyRef.current) {
-        cancel.current.cancelled = true;
-        cancel.current.abort?.abort();
-      } else {
+      if (busyRef.current) cancelRunning();
+      else {
         setRows((r) => [...r, { id: ++idRef.current, kind: "prompt", cwd, text: `${search ? "" : input}^C` }]);
         setInput("");
         setCaret(0);
@@ -426,7 +498,7 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
       e.nativeEvent.stopImmediatePropagation();
       if (menu) setMenu(null);
       else if (search) setSearch(null);
-      else setPane(null);
+      else showPane(null);
       return;
     }
     if (menu) {
@@ -484,7 +556,7 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
     }
     if (k === "q" && !input && pane?.view.type === "reader") {
       e.preventDefault();
-      setPane(null);
+      showPane(null);
     } else if (k === "Enter") {
       e.preventDefault();
       void run(input);
@@ -507,17 +579,16 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
 
   const syncCaret = () => setCaret(inputRef.current?.selectionStart ?? input.length);
   const runFromClick = (command: string) => void run(command);
-  const paneNode = pane && (
-    <ViewPane view={pane.view} activeId={pane.activeId} graph={graph} onClose={() => setPane(null)} onRun={runFromClick} />
-  );
-  const keys: { label: string; action: () => void }[] = [
-    { label: "Tab", action: () => completeNow() },
-    { label: "↑", action: historyPrev },
-    { label: "cd ..", action: () => runFromClick("cd ..") },
-    { label: "ls", action: () => runFromClick("ls") },
-    { label: "help", action: () => runFromClick("help") },
-    { label: "clear", action: () => setRows([]) },
-  ];
+  const { settled, live } = splitRows(rows);
+  const keyActions: Record<MobileKeyId, () => void> = {
+    tab: () => completeNow(),
+    up: historyPrev,
+    cdup: () => runFromClick("cd .."),
+    ls: () => runFromClick("ls"),
+    help: () => runFromClick("help"),
+    clear: () => setRows([]),
+    cancel: cancelRunning,
+  };
 
   return (
     <div className="fixed inset-0 z-30 flex flex-col bg-bg font-mono text-[13px] leading-[1.65] text-text">
@@ -526,25 +597,30 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
         <span className="size-2.5 rounded-full bg-[var(--k-queue)]" aria-hidden="true" />
         <span className="size-2.5 rounded-full bg-[var(--k-store)]" aria-hidden="true" />
         <span className="ml-3 truncate">kernel — {pathOf(cwd)}</span>
-        <button type="button" onClick={() => router.push("/systems")} className="ml-auto hover:text-text">
+        <Link href="/systems" className="ml-auto hover:text-text">
           gui ↗
-        </button>
+        </Link>
         <button type="button" onClick={kernel.toggleTheme} className="hover:text-text" aria-label="Toggle theme">
           ◐
         </button>
       </div>
 
-      <div className="flex min-h-0 flex-1">
+      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         <div
           ref={scrollRef}
-          className="min-w-0 flex-1 overflow-y-auto px-4 py-3 sm:px-6"
+          className="min-h-0 min-w-0 flex-1 overflow-y-auto px-4 py-3 sm:px-6"
           onMouseUp={() => {
             if (!window.getSelection()?.toString()) inputRef.current?.focus({ preventScroll: true });
           }}
         >
           <div role="log" aria-live="polite" aria-label="Kernel shell output">
-            <Transcript rows={rows} onRun={runFromClick} />
+            <Transcript rows={settled} onRun={runFromClick} />
           </div>
+          {live.length > 0 && (
+            <div aria-hidden="true">
+              <Transcript rows={live} onRun={runFromClick} />
+            </div>
+          )}
           <label className="relative block whitespace-pre-wrap break-all">
             <span className={busy ? "invisible" : undefined}>
               {search ? (
@@ -590,14 +666,16 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
               autoCorrect="off"
               enterKeyHint="go"
               aria-label="Kernel shell input"
+              {...comboboxProps(menu, LIST_ID)}
               className="absolute inset-0 h-full w-full cursor-text opacity-0"
             />
           </label>
           {menu && (
-            <div role="listbox" aria-label="Completions" className="mt-1 grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-x-4 border-t border-border pt-1">
+            <div id={LIST_ID} role="listbox" aria-label="Completions" className="mt-1 grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-x-4 border-t border-border pt-1">
               {menu.items.map((item, i) => (
                 <button
                   key={item.value}
+                  id={optionId(LIST_ID, i)}
                   type="button"
                   role="option"
                   aria-selected={i === menu.index}
@@ -612,21 +690,27 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
             </div>
           )}
         </div>
-        {paneNode && <div className="hidden w-[46%] min-w-[420px] md:block">{paneNode}</div>}
+        {pane && (
+          <ViewTransition name="kernel-pane">
+            <div className="h-[42%] shrink-0 border-t border-border md:h-auto md:w-[46%] md:min-w-[420px] md:border-t-0">
+              <ViewPane view={pane.view} activeId={pane.activeId} graph={graph} onClose={() => showPane(null)} onRun={runFromClick} />
+            </div>
+          </ViewTransition>
+        )}
       </div>
-      {paneNode && <div className="h-[42%] shrink-0 border-t border-border md:hidden">{paneNode}</div>}
 
       <div className="hidden shrink-0 gap-1.5 overflow-x-auto border-t border-border px-2 py-1.5 [@media(pointer:coarse)]:flex" aria-label="Shell keys">
-        {keys.map((key) => (
+        {mobileKeys(busy).map((key) => (
           <button
-            key={key.label}
+            key={key.id}
             type="button"
+            disabled={key.disabled}
             onPointerDown={(e) => e.preventDefault()}
             onClick={() => {
-              key.action();
+              keyActions[key.id]();
               inputRef.current?.focus({ preventScroll: true });
             }}
-            className="shrink-0 rounded border border-border px-2.5 py-1 text-[12px] text-muted"
+            className={`shrink-0 rounded border px-2.5 py-1 text-[12px] disabled:opacity-40 ${key.id === "cancel" ? "border-accent text-accent" : "border-border text-muted"}`}
           >
             {key.label}
           </button>
