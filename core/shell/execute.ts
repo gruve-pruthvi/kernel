@@ -19,14 +19,22 @@ const PROSE_WORD = /^[\p{L}\p{N}'’",.!?()-]+$/u;
  * - unknown first word followed by prose-like words, or anything ending in "?";
  * - a line starting with a command word only when it reads as a question (ends in "?", 3+ prose words).
  */
+const QUESTION_WORDS = new Set([
+  "what", "what's", "whats", "who", "who's", "whos", "why", "how", "where", "when", "which",
+  "is", "are", "can", "could", "does", "do", "did", "tell", "show", "explain", "give", "list", "has", "have", "any",
+]);
+
 export function isQuestion(line: string): boolean {
   if (/[|;]/.test(line)) return false;
   const words = line.trim().split(/\s+/);
+  const first = words[0];
   const prose = words.every((w) => PROSE_WORD.test(w)) && !words.slice(1).some((w) => w.startsWith("-"));
   const asked = /\?$/.test(line);
-  if (getCommand(words[0])) return asked && words.length >= 3 && prose;
+  if (getCommand(first)) return asked && words.length >= 3 && prose;
+  const pathLike = words.slice(1).some((w) => w === "." || w.includes("/") || w.includes("*") || w.startsWith("-") || /\.[a-z0-9]+$/i.test(w));
+  if (!asked && pathLike && !QUESTION_WORDS.has(first.toLowerCase()) && nearest(first, commandNames())) return false;
   if (asked) return true;
-  return words.length >= 2 && prose && /^[\p{L}][\p{L}'’]*$/u.test(words[0]);
+  return words.length >= 2 && prose && /^[\p{L}][\p{L}'’]*$/u.test(first);
 }
 
 export function execute(
@@ -91,7 +99,8 @@ export function execute(
         break;
       }
       const res = cmd.run(flags.args, flags.flags, { p, fs, state: st, stdin, now, commands: COMMANDS });
-      if (res.state) st = { ...st, ...res.state };
+      // Bash runs pipeline stages in subshells: only the final stage may change shell state.
+      if (res.state && isLast) st = { ...st, ...res.state };
       exitCode = res.exitCode ?? 0;
       if (isLast) {
         output.push(...(res.output ?? []));

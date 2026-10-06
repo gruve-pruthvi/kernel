@@ -46,7 +46,9 @@ export function checkIntegrity(p: Portfolio): string[] {
     });
   }
 
+  for (const d of duplicates(p.experience.map((e) => e.id))) errors.push(`experience: duplicate id "${d}"`);
   for (const e of p.experience) {
+    for (const d of duplicates(e.commits.map((c) => c.hash))) errors.push(`experience.${e.id}.commits: duplicate hash "${d}"`);
     e.commits.forEach((c, i) => {
       for (const sys of c.systems ?? []) {
         if (!systemSlugs.has(sys)) errors.push(`experience.${e.id}.commits[${i}]: unknown system "${sys}"`);

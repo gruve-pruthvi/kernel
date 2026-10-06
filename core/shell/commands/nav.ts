@@ -58,6 +58,7 @@ const cd: Command = {
   seeAlso: ["ls", "pwd"],
   run(args, _flags, ctx) {
     if (args.length > 1) return fail("cd: too many arguments");
+    if (args[0] === "") return {};
     const target = args[0] ?? "~";
     if (target === "-") {
       return { state: { cwd: ctx.state.prevCwd, prevCwd: ctx.state.cwd }, output: [out(seg(pathOf(ctx.state.prevCwd), "dir"))] };

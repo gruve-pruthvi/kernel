@@ -80,10 +80,12 @@ export function expandHistory(
 ): { ok: true; line: string; expanded: boolean } | { ok: false; error: string } {
   let out = "";
   let inSingle = false;
+  let inDouble = false;
   let expanded = false;
   for (let i = 0; i < input.length; i++) {
     const ch = input[i];
-    if (ch === "'") inSingle = !inSingle;
+    if (ch === '"' && !inSingle) inDouble = !inDouble;
+    else if (ch === "'" && !inDouble) inSingle = !inSingle;
     if (ch !== "!" || inSingle) {
       out += ch;
       continue;
