@@ -1,10 +1,18 @@
 # Kernel
 
-An interactive developer portfolio: inspectable **Systems** (architecture, decisions, simulated requests), a skill **Graph**, a git-style **Trace**, an AI **Query** that answers from portfolio data and drives the UI, and a **Recruiter Mode** one-screen summary — all behind a terminal-first home page: the **Kernel shell**.
+An interactive developer portfolio: inspectable **Systems** (architecture, decisions, simulated requests), a skill **Graph**, a git-style **Trace**, an AI **Query** that answers from portfolio data and drives the UI — with two front doors chosen at boot: a fast **recruiter view** at `/` and the **Kernel shell** at `/shell`.
+
+## Boot modes
+
+First visit to `/` shows a bootloader: **Just show me the work** (recruiter view, preselected) or **Give me a shell**. It boots the preselected option after 3 s (2 s on touch devices); arrow keys or moving the pointer over the menu stop the countdown. Visitors arriving from GitHub, Hacker News, dev.to, Lobsters or Stack Overflow get the shell preselected. Returning visitors go straight to their last mode.
+
+- Switch any time: the `human · shell` pill in the header, `` ` `` on any page for a drop-down console, `exit` / `human` in the shell.
+- Links: `/` (adaptive), `/?mode=human`, `/?mode=shell`, `/shell?cmd=run%20atlas`, `/?boot=1` (always show the bootloader — handy for demos).
+- Old `/?cmd=…` links redirect to `/shell?cmd=…`; `/human` redirects to `/#human`.
 
 ## The shell
 
-The home page is **Kernel**, a shell over a virtual filesystem generated from `content/`:
+The shell at `/shell` is **Kernel**, over a virtual filesystem generated from `content/`:
 
 ```
 ~/systems/<name>/   README.md · architecture · decisions.md · tradeoffs.md · impact.txt · stack.txt · links.txt
@@ -13,7 +21,7 @@ The home page is **Kernel**, a shell over a virtual filesystem generated from `c
 ~/README.md · about.md · career.log · contact.txt · resume.pdf
 ```
 
-Try `ls`, `cd systems/atlas`, `cat decisions.md`, `run atlas`, `grep -i rag . | head -n 5`, `find . -name *.md`, `man kernel`, `history`, or ask anything in plain English. Everything underlined is clickable; the visual site is one `gui` away.
+Try `ls`, `cd systems/atlas`, `cat decisions.md`, `run atlas`, `grep -i rag . | head -n 5`, `find . -name *.md`, `man kernel`, `history`, or ask anything in plain English. Everything underlined is clickable; the recruiter view is one `exit` away (`gui <page>` opens a specific page).
 
 Engineering introspection: `git log [system] [--oneline]`, `git show <hash>`, `git branch`, `diff atlas relay`, `status`, `ps`, `top`, `env`, `benchmark <system>` (prints only measurements you add as `benchmarks` in a system's content), `graph --depth 2 atlas`. Ask with `ask <question>` or just type it — answers are followed by a clickable tree of related systems. `open atlas --full` jumps to the visual case study.
 
@@ -103,4 +111,4 @@ docs/      design spec and implementation plan
 
 ## Keyboard
 
-`/` ask (visual pages) · `⌘K` / `Ctrl+K` back to the shell · `Esc` close
+`/` ask (visual pages) · `` ` `` drop-down console · `⌘K` / `Ctrl+K` full shell · `Esc` close
