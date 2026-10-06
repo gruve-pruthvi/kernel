@@ -66,7 +66,6 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
   const router = useRouter();
   const motion = useMotionAllowed();
   const theme = useKernel((s) => s.theme);
-  const recruiter = useKernel((s) => s.recruiter);
   const motionRef = useRef(motion);
 
   const idRef = useRef(initial.length);
@@ -84,7 +83,7 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
   const [pane, setPaneState] = useState<Pane>(null);
   const [ai, setAi] = useState<Ai>("unknown");
   const [clock, setClock] = useState("");
-  const envRef = useRef<RuntimeEnv>({ theme: "dark", motion: "full", recruiter: false, ai: "unknown", pane: null });
+  const envRef = useRef<RuntimeEnv>({ theme: "dark", motion: "full", mode: "shell", ai: "unknown", pane: null });
   const cancel = useRef<{ cancelled: boolean; abort?: AbortController; onCancel?: () => void }>({ cancelled: false });
   const aiHistory = useRef<{ role: "user" | "assistant"; content: string }[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -96,11 +95,11 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
     envRef.current = {
       theme,
       motion: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "reduced" : "full",
-      recruiter,
+      mode: "shell",
       ai,
       pane: pane?.view.type ?? null,
     };
-  }, [motion, theme, recruiter, ai, pane]);
+  }, [motion, theme, ai, pane]);
 
   /** Pane open/close/switch animates (view transition); activeId changes during a simulation do not. */
   const showPane = useCallback((next: Pane) => startTransition(() => setPaneState(next)), []);
@@ -201,7 +200,7 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
           const page = a.path.replace(/^\//, "") || "systems";
           add([out(seg("  → ", "faint"), seg(`gui ${page}`, "accent", { run: `gui ${page}` }), seg(" to open it visually", "faint"))]);
         }
-      } else add([out(seg("  → ", "faint"), seg("recruiter", "accent", { run: "recruiter" }), seg(" for the one-screen summary", "faint"))]);
+      } else add([out(seg("  → ", "faint"), seg(a.mode === "human" ? "human" : "pwd", "accent", { run: a.mode === "human" ? "human" : "pwd" }), seg(a.mode === "human" ? " for the recruiter view" : " — you are already in the shell", "faint"))]);
     },
     [add, showPane],
   );
@@ -304,8 +303,9 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
         case "clear":
           setRows([]);
           return;
-        case "recruiter":
-          kernel.setRecruiter(e.on);
+        case "mode":
+          kernel.setMode(e.mode);
+          router.push(e.mode === "human" ? "/" : "/shell");
           return;
       }
     },

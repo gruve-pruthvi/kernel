@@ -9,10 +9,7 @@ export function useRunAction() {
   const router = useRouter();
   return useCallback(
     (action: UiAction) => {
-      if (action.type === "toggleRecruiter") {
-        kernel.setRecruiter(action.on);
-        return;
-      }
+      if (action.type === "switchMode") kernel.setMode(action.mode);
       const href = actionToHref(action);
       if (href) router.push(href);
     },

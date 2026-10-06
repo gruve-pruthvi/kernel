@@ -37,7 +37,8 @@ describe("validateAction", () => {
   it("rejects malformed input", () => {
     expect(validateAction(null, portfolio)).toBeNull();
     expect(validateAction({ type: "explode" }, portfolio)).toBeNull();
-    expect(validateAction({ type: "toggleRecruiter", on: "yes" }, portfolio)).toBeNull();
+    expect(validateAction({ type: "switchMode", mode: "robot" }, portfolio)).toBeNull();
+    expect(validateAction({ type: "switchMode", mode: "shell" }, portfolio)).toEqual({ type: "switchMode", mode: "shell" });
   });
 });
 
@@ -48,7 +49,8 @@ describe("actionToHref", () => {
       "/graph?focus=tech%3Apython%2Csystem%3Aatlas",
     );
     expect(actionToHref({ type: "filterSystems", tech: "kafka", capability: "rag" })).toBe("/systems?tech=kafka&capability=rag");
-    expect(actionToHref({ type: "toggleRecruiter", on: true })).toBeNull();
+    expect(actionToHref({ type: "switchMode", mode: "human" })).toBe("/");
+    expect(actionToHref({ type: "switchMode", mode: "shell" })).toBe("/shell");
   });
 });
 

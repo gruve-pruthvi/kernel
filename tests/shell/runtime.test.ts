@@ -52,8 +52,8 @@ describe("ps / top / env", () => {
   });
 
   it("env shows public configuration only", () => {
-    const text = withEnv("env", { theme: "light", ai: "online", recruiter: true, motion: "reduced" });
-    for (const line of ["KERNEL_VERSION=1.0", "CWD=~", "THEME=light", "MOTION=reduced", "RECRUITER=on", "AI=online", "HISTSIZE=1"]) {
+    const text = withEnv("env", { theme: "light", ai: "online", mode: "human", motion: "reduced" });
+    for (const line of ["KERNEL_VERSION=1.0", "CWD=~", "THEME=light", "MOTION=reduced", "MODE=human", "AI=online", "HISTSIZE=1"]) {
       expect(text).toContain(line);
     }
     expect(text).toMatch(/SESSION_START=\d\d:\d\d/);

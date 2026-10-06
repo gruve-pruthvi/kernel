@@ -137,7 +137,7 @@ const env: Command = {
       ["CWD", pathOf(ctx.state.cwd)],
       ["THEME", ctx.env.theme],
       ["MOTION", ctx.env.motion],
-      ["RECRUITER", ctx.env.recruiter ? "on" : "off"],
+      ["MODE", ctx.env.mode],
       ["AI", ctx.env.ai],
       ["HISTSIZE", String(ctx.state.history.length)],
       ["SESSION_START", hhmm(ctx.state.sessionStart)],

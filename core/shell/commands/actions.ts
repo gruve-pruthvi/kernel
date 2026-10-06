@@ -124,13 +124,13 @@ const gui: Command = {
 const recruiter: Command = {
   name: "recruiter",
   group: "actions",
-  summary: "one-screen summary in the visual site",
+  summary: "switch to the recruiter view",
   usage: "recruiter",
-  description: ["Turns on recruiter mode (a fast, motion-free summary) and opens the visual site."],
+  description: ["Switches to the recruiter view: a fast, readable overview of the work. Same as `human`."],
   examples: ["recruiter"],
   seeAlso: ["resume", "gui"],
   run() {
-    return { effects: [{ type: "recruiter", on: true }, { type: "navigate", href: "/systems" }] };
+    return { effects: [{ type: "mode", mode: "human" }] };
   },
 };
 

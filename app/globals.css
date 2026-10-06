@@ -156,15 +156,7 @@ body {
   }
 }
 
-:root[data-recruiter="on"] .motion-optional,
-:root[data-recruiter="on"] .animate-fade-up,
-:root[data-recruiter="on"] .cursor-blink,
-:root[data-recruiter="on"] .edge-flow,
-:root[data-recruiter="on"] .pulse-ring {
-  animation: none !important;
-}
-
-/* View transitions (React <ViewTransition>): gentle morphs, none for reduced motion or recruiter mode */
+/* View transitions: gentle morphs, none for reduced motion */
 ::view-transition-group(.morph) {
   animation-duration: 380ms;
 }
@@ -178,9 +170,4 @@ body {
   ::view-transition-new(*) {
     animation: none !important;
   }
-}
-:root[data-recruiter="on"]::view-transition-group(*),
-:root[data-recruiter="on"]::view-transition-old(*),
-:root[data-recruiter="on"]::view-transition-new(*) {
-  animation: none !important;
 }

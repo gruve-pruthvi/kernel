@@ -61,9 +61,9 @@ const tools = {
     description: "List the systems that use a technology and/or demonstrate a capability.",
     inputSchema: z.object({ tech: z.string().optional(), capability: z.string().optional() }),
   }),
-  toggleRecruiter: tool({
-    description: "Turn recruiter mode (a fast one-screen overview) on or off.",
-    inputSchema: z.object({ on: z.boolean() }),
+  switchMode: tool({
+    description: "Switch the site between the recruiter view (human) and the terminal (shell).",
+    inputSchema: z.object({ mode: z.enum(["human", "shell"]) }),
   }),
 };
 

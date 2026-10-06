@@ -1,3 +1,5 @@
+import type { Mode } from "../boot";
+
 export type Tone =
   | "text"
   | "muted"
@@ -37,7 +39,7 @@ export type Effect =
   | { type: "simulate"; slug: string }
   | { type: "ask"; question: string }
   | { type: "clear" }
-  | { type: "recruiter"; on: boolean };
+  | { type: "mode"; mode: Mode };
 
 export interface HistoryEntry {
   command: string;
@@ -55,12 +57,12 @@ export interface ShellState {
 export interface RuntimeEnv {
   theme: "dark" | "light";
   motion: "full" | "reduced";
-  recruiter: boolean;
+  mode: Mode;
   ai: "online" | "offline" | "unknown";
   pane: string | null;
 }
 
-export const DEFAULT_ENV: RuntimeEnv = { theme: "dark", motion: "full", recruiter: false, ai: "unknown", pane: null };
+export const DEFAULT_ENV: RuntimeEnv = { theme: "dark", motion: "full", mode: "shell", ai: "unknown", pane: null };
 
 export interface Result {
   output: OutputItem[];

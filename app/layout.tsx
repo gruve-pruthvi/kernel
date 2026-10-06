@@ -19,8 +19,8 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image", title: `${identity.name} — Kernel`, description: identity.tagline },
 };
 
-// Runs before paint: restores theme + recruiter mode and sets the browser chrome colour from the site theme.
-const themeScript = `(function(){try{var d=document.documentElement,s=localStorage;var t=s.getItem("kernel:theme");if(t)d.dataset.theme=t;if(s.getItem("kernel:recruiter")==="on")d.dataset.recruiter="on";var m=document.createElement("meta");m.name="theme-color";m.content=t==="light"?"#f6f4ef":"#0e0f11";document.head.appendChild(m);}catch(e){}})();`;
+// Runs before paint: restores the theme and sets the browser chrome colour from the site theme.
+const themeScript = `(function(){try{var d=document.documentElement,s=localStorage;var t=s.getItem("kernel:theme");if(t)d.dataset.theme=t;var m=document.createElement("meta");m.name="theme-color";m.content=t==="light"?"#f6f4ef":"#0e0f11";document.head.appendChild(m);}catch(e){}})();`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

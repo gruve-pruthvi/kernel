@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Kbd } from "@/components/ui/Kbd";
 import { kernel } from "@/lib/store";
-import { RecruiterToggle } from "./RecruiterToggle";
 import { ThemeToggle } from "./ThemeToggle";
 
 const LINKS = [
@@ -59,7 +58,6 @@ export function Header() {
           >
             &gt;_ shell <Kbd>⌘K</Kbd>
           </Link>
-          <RecruiterToggle />
           <ThemeToggle />
           <button
             type="button"
@@ -89,10 +87,6 @@ export function Header() {
             <Link href="/" className="font-mono text-xs text-muted">
               Shell
             </Link>
-            <span className="text-faint">·</span>
-            <button type="button" onClick={kernel.toggleRecruiter} className="font-mono text-xs text-muted">
-              Recruiter mode
-            </button>
           </div>
         </nav>
       )}

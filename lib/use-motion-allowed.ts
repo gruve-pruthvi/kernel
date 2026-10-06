@@ -1,7 +1,6 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { useKernel } from "./store";
 
 const QUERY = "(prefers-reduced-motion: reduce)";
 
@@ -19,6 +18,5 @@ export function useMotionAllowed(): boolean {
     () => window.matchMedia(QUERY).matches,
     () => true,
   );
-  const recruiter = useKernel((s) => s.recruiter);
-  return !reduced && !recruiter;
+  return !reduced;
 }

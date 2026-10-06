@@ -7,7 +7,7 @@ export const uiActionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("openSystem"), slug: z.string().min(1) }),
   z.object({ type: z.literal("highlightGraph"), ids: z.array(z.string().min(1)).min(1).max(20) }),
   z.object({ type: z.literal("filterSystems"), tech: z.string().optional(), capability: z.string().optional() }),
-  z.object({ type: z.literal("toggleRecruiter"), on: z.boolean() }),
+  z.object({ type: z.literal("switchMode"), mode: z.enum(["human", "shell"]) }),
 ]);
 
 export type UiAction = z.infer<typeof uiActionSchema>;
@@ -45,7 +45,7 @@ export function validateAction(raw: unknown, p: Portfolio): UiAction | null {
         ...(a.capability ? { capability: a.capability } : {}),
       };
     }
-    case "toggleRecruiter":
+    case "switchMode":
       return a;
   }
 }
@@ -64,8 +64,8 @@ export function actionToHref(a: UiAction): string | null {
       if (a.capability) params.set("capability", a.capability);
       return `/systems?${params.toString()}`;
     }
-    case "toggleRecruiter":
-      return null;
+    case "switchMode":
+      return a.mode === "human" ? "/" : "/shell";
   }
 }
 
@@ -89,7 +89,7 @@ export function describeAction(a: UiAction, p: Portfolio): string {
       ].filter(Boolean);
       return `Filtered systems by ${parts.join(" + ")}`;
     }
-    case "toggleRecruiter":
-      return `Recruiter mode ${a.on ? "on" : "off"}`;
+    case "switchMode":
+      return a.mode === "human" ? "Switched to the recruiter view" : "Switched to the shell";
   }
 }
