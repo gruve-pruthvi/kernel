@@ -3,9 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { flushSync } from "react-dom";
-import { bootLog, bootLogItems, decideBoot, HYDRATION_WATCHDOG_MS, type BootDecision, type Mode } from "@/core/boot";
+import { bootLog, bootLogItems, decideBoot, isLateHydration, type BootDecision, type Mode } from "@/core/boot";
 import { portfolio } from "@/core/content";
 import { kernel, readBootPrefs } from "@/lib/store";
+import { bootKeyAction } from "./policy";
 
 const LINES = bootLog(portfolio);
 const LINE_MS = 120;
@@ -27,9 +28,11 @@ export function BootOverlay() {
   const [left, setLeft] = useState(0);
   const [stopped, setStopped] = useState(false);
   const [reduced, setReduced] = useState(false);
+  const [announce, setAnnounce] = useState("");
   const done = useRef(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   // Decide once after hydration; the pre-paint script has already covered the page (data-boot="on").
   useEffect(() => {
@@ -43,10 +46,12 @@ export function BootOverlay() {
       modeParam: q.get("mode"),
       forceBoot: q.get("boot") === "1",
       isMobile: window.matchMedia("(pointer: coarse)").matches,
-      lateHydration: performance.now() > HYDRATION_WATCHDOG_MS,
+      lateHydration: isLateHydration(performance.now(), root.dataset.bootAt),
     });
     if (q.get("boot") === "1") window.history.replaceState(null, "", "/");
     if (!d.show) {
+      // Hydrated after the cover lifted (slow device): settle on the recruiter view so the cover is not repeated every visit.
+      if (d.target === "human" && !q.get("mode") && !q.get("cmd") && !readBootPrefs().menuSeen) kernel.setMode("human");
       delete root.dataset.boot;
       return;
     }
@@ -108,26 +113,48 @@ export function BootOverlay() {
   }, [phase, stopped, left, decision, boot]);
 
   useEffect(() => {
-    if (phase === "menu") listRef.current?.focus({ preventScroll: true });
+    if (phase !== "menu" || !decision) return;
+    listRef.current?.focus({ preventScroll: true });
+    // Filled after the live region exists, so screen readers announce it once.
+    const label = OPTIONS.find((o) => o.mode === decision.preselect)?.label ?? OPTIONS[0].label;
+    const t = setTimeout(() => setAnnounce(`Choose an interface. "${label}" starts in ${decision.countdownMs / 1000} seconds unless you choose.`), 100);
+    return () => clearTimeout(t);
+  }, [phase, decision]);
+
+  // Modal: everything behind the overlay is inert (out of the Tab order and the accessibility tree) while it is up.
+  useEffect(() => {
+    if (phase === "off") return;
+    const own = rootRef.current;
+    const behind = [...document.body.children].filter((el): el is HTMLElement => el instanceof HTMLElement && el !== own && !el.contains(own));
+    behind.forEach((el) => (el.inert = true));
+    return () => behind.forEach((el) => (el.inert = false));
   }, [phase]);
 
   // Keys and scroll: Enter boots the highlighted line, ` boots the shell, Esc / scroll boot the recruiter view.
   useEffect(() => {
     if (phase === "off") return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
-      if ((e.target as HTMLElement | null)?.tagName === "BUTTON") return; // let buttons handle their own Enter/Space
-      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      const target = e.target as HTMLElement | null;
+      const action = bootKeyAction({
+        key: e.key,
+        meta: e.metaKey,
+        ctrl: e.ctrlKey,
+        alt: e.altKey,
+        targetTag: target?.tagName ?? "",
+        editable: Boolean(target && (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))),
+      });
+      if (!action) return;
+      if (action === "up" || action === "down") {
         e.preventDefault();
         setStopped(true);
-        setIndex((i) => (i + (e.key === "ArrowDown" ? 1 : OPTIONS.length - 1)) % OPTIONS.length);
-      } else if (e.key === "Enter") {
+        setIndex((i) => (i + (action === "down" ? 1 : OPTIONS.length - 1)) % OPTIONS.length);
+      } else if (action === "boot-selected") {
         e.preventDefault();
         boot(OPTIONS[index].mode);
-      } else if (e.key === "`") {
+      } else if (action === "boot-shell") {
         e.preventDefault();
         boot("shell");
-      } else if (e.key === "Escape") boot("human");
+      } else boot("human");
     };
     const onScroll = () => boot("human");
     window.addEventListener("keydown", onKey);
@@ -152,6 +179,10 @@ export function BootOverlay() {
 
   return (
     <div
+      ref={rootRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Kernel boot menu"
       className="fixed inset-0 z-50 overflow-y-auto bg-bg font-mono text-[13px] leading-[1.7] text-text"
       onPointerDown={(e) => {
         if (phase === "menu" && !menuRef.current?.contains(e.target as Node)) boot("human");
@@ -223,7 +254,7 @@ export function BootOverlay() {
               {status}
             </p>
             <p aria-live="polite" className="sr-only">
-              {`Choose an interface. "${preselected.label}" starts in ${seconds} seconds unless you choose.`}
+              {announce}
             </p>
           </div>
         )}

@@ -206,7 +206,7 @@ const reboot: Command = {
   examples: ["reboot"],
   seeAlso: ["human", "exit"],
   run() {
-    return { output: [out(seg("rebooting…", "faint"))], effects: [{ type: "navigate", href: "/?boot=1" }] };
+    return { output: [out(seg("rebooting…", "faint"))], effects: [{ type: "navigate", href: "/?boot=1", hard: true }] };
   },
 };
 

@@ -55,7 +55,7 @@ export function Overlays() {
         kernel.closeQuery();
         return;
       }
-      if (e.key === "/" && pathname !== "/shell" && !isTyping(e.target)) {
+      if (e.key === "/" && pathname !== "/shell" && !isTyping(e.target) && !document.documentElement.dataset.boot) {
         e.preventDefault();
         kernel.openQuery();
       }

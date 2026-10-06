@@ -298,7 +298,9 @@ export function Shell({
           showPane(null);
           return;
         case "navigate":
-          router.push(e.href);
+          // A hard load lets pre-paint scripts run (reboot needs the bootloader's cover).
+          if (e.hard) window.location.assign(e.href);
+          else router.push(e.href);
           return;
         case "download": {
           const a = document.createElement("a");

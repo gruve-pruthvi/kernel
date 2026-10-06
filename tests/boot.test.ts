@@ -1,6 +1,6 @@
 import vm from "node:vm";
 import { describe, expect, it } from "vitest";
-import { bootLog, bootLogItems, bootScript, decideBoot, type BootSignals, type Mode } from "@/core/boot";
+import { bootLog, bootLogItems, bootScript, decideBoot, isLateHydration, type BootSignals, type Mode } from "@/core/boot";
 import { portfolio } from "@/core/content";
 import type { Portfolio } from "@/core/schema";
 
@@ -148,5 +148,27 @@ describe("bootScript", () => {
           expect(r.boot === "on", label).toBe(d.show);
           expect(r.replaced === "/shell", label).toBe(!d.show && d.target === "shell");
         }
+  });
+});
+
+describe("hydration lateness", () => {
+  it("is measured from the pre-paint script, not from navigation start", () => {
+    expect(isLateHydration(2600, "1200")).toBe(false); // slow server, fast JS: 1.4 s after the cover appeared
+    expect(isLateHydration(2800, "1200")).toBe(true);
+    expect(isLateHydration(400, undefined)).toBe(false);
+    expect(isLateHydration(1600, undefined)).toBe(true); // no stamp: fall back to navigation start
+  });
+
+  it("the script stamps when it covered the page", () => {
+    const store: Record<string, string> = {};
+    const dataset: Record<string, string> = {};
+    vm.runInNewContext(bootScript(), {
+      document: { documentElement: { dataset } },
+      location: { pathname: "/", search: "", replace: () => {} },
+      URLSearchParams,
+      performance: { now: () => 812.4 },
+      localStorage: { getItem: (k: string) => store[k] ?? null, setItem: (k: string, v: string) => (store[k] = v) },
+    });
+    expect(dataset).toMatchObject({ boot: "on", bootAt: "812" });
   });
 });

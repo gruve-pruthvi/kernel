@@ -22,7 +22,7 @@ describe("mode commands", () => {
   });
 
   it("reboot replays the bootloader", () => {
-    expect(on("reboot").effects).toEqual([{ type: "navigate", href: "/?boot=1" }]);
+    expect(on("reboot").effects[0]).toMatchObject({ type: "navigate", href: "/?boot=1" });
   });
 
   it("fullscreen opens the full shell from the console only", () => {
@@ -34,5 +34,11 @@ describe("mode commands", () => {
 
   it("mode effects are dropped inside pipelines", () => {
     for (const cmd of ["human | cat", "exit | wc -l", "reboot | head"]) expect(on(cmd).effects, cmd).toEqual([]);
+  });
+});
+
+describe("reboot is a full page load", () => {
+  it("asks for a hard navigation so the pre-paint boot script runs", () => {
+    expect(on("reboot").effects).toEqual([{ type: "navigate", href: "/?boot=1", hard: true }]);
   });
 });

@@ -34,7 +34,7 @@ export type View =
 export type Effect =
   | { type: "openView"; view: View }
   | { type: "closeView" }
-  | { type: "navigate"; href: string }
+  | { type: "navigate"; href: string; hard?: boolean }
   | { type: "download"; href: string }
   | { type: "simulate"; slug: string }
   | { type: "ask"; question: string }
