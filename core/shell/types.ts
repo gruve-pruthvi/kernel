@@ -39,7 +39,8 @@ export type Effect =
   | { type: "simulate"; slug: string }
   | { type: "ask"; question: string }
   | { type: "clear" }
-  | { type: "mode"; mode: Mode };
+  | { type: "mode"; mode: Mode }
+  | { type: "exit" };
 
 export interface HistoryEntry {
   command: string;
@@ -58,11 +59,12 @@ export interface RuntimeEnv {
   theme: "dark" | "light";
   motion: "full" | "reduced";
   mode: Mode;
+  surface: "page" | "console";
   ai: "online" | "offline" | "unknown";
   pane: string | null;
 }
 
-export const DEFAULT_ENV: RuntimeEnv = { theme: "dark", motion: "full", mode: "shell", ai: "unknown", pane: null };
+export const DEFAULT_ENV: RuntimeEnv = { theme: "dark", motion: "full", mode: "shell", surface: "page", ai: "unknown", pane: null };
 
 export interface Result {
   output: OutputItem[];

@@ -83,7 +83,7 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
   const [pane, setPaneState] = useState<Pane>(null);
   const [ai, setAi] = useState<Ai>("unknown");
   const [clock, setClock] = useState("");
-  const envRef = useRef<RuntimeEnv>({ theme: "dark", motion: "full", mode: "shell", ai: "unknown", pane: null });
+  const envRef = useRef<RuntimeEnv>({ theme: "dark", motion: "full", mode: "shell", surface: "page", ai: "unknown", pane: null });
   const cancel = useRef<{ cancelled: boolean; abort?: AbortController; onCancel?: () => void }>({ cancelled: false });
   const aiHistory = useRef<{ role: "user" | "assistant"; content: string }[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -96,6 +96,7 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
       theme,
       motion: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "reduced" : "full",
       mode: "shell",
+      surface: "page",
       ai,
       pane: pane?.view.type ?? null,
     };
@@ -306,6 +307,10 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
         case "mode":
           kernel.setMode(e.mode);
           router.push(e.mode === "human" ? "/" : "/shell");
+          return;
+        case "exit":
+          kernel.setMode("human");
+          router.push("/");
           return;
       }
     },

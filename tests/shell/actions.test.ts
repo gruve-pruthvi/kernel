@@ -61,7 +61,7 @@ describe("graph / git / gui / recruiter / clear / easter eggs", () => {
   it("easter eggs use real contact data", () => {
     expect(run("sudo hire").text).toContain(portfolio.identity.links.email);
     expect(run("sudo rm").text).toBe("sudo: permission denied — only `sudo hire` is allowed");
-    expect(run("exit").text).toContain("gui");
+    expect(run("exit").res.effects).toEqual([{ type: "exit" }]);
   });
 
   it("effects of non-final stages are discarded", () => {

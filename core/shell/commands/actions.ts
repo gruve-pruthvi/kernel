@@ -175,12 +175,53 @@ const exit: Command = {
   group: "actions",
   summary: "leave the shell",
   usage: "exit",
-  description: ["There is no exit — but there is a visual site."],
+  description: ["In the drop-down console: closes it. In the full shell: switches to the recruiter view."],
   examples: ["exit"],
-  seeAlso: ["gui"],
-  run() {
-    return { output: [out(seg("logout? there's no escape — try ", "faint"), seg("gui", "accent", { run: "gui" }))] };
+  seeAlso: ["human", "reboot"],
+  run(_args, _flags, ctx) {
+    const note = ctx.env.surface === "console" ? "closing console…" : "logout — switching to the recruiter view…";
+    return { output: [out(seg(note, "faint"))], effects: [{ type: "exit" }] };
   },
 };
 
-export const actionCommands = [open, runCmd, graph, gui, recruiter, clear, sudo, exit];
+const human: Command = {
+  name: "human",
+  group: "actions",
+  summary: "switch to the recruiter view",
+  usage: "human",
+  description: ["Switches to the recruiter view: the work at a glance. Press the backtick key there to drop the shell back down."],
+  examples: ["human"],
+  seeAlso: ["exit", "reboot", "gui"],
+  run() {
+    return { effects: [{ type: "mode", mode: "human" }] };
+  },
+};
+
+const reboot: Command = {
+  name: "reboot",
+  group: "actions",
+  summary: "replay the bootloader",
+  usage: "reboot",
+  description: ["Restarts Kernel at the boot menu, where you can pick the recruiter view or the shell."],
+  examples: ["reboot"],
+  seeAlso: ["human", "exit"],
+  run() {
+    return { output: [out(seg("rebooting…", "faint"))], effects: [{ type: "navigate", href: "/?boot=1" }] };
+  },
+};
+
+const fullscreen: Command = {
+  name: "fullscreen",
+  group: "actions",
+  summary: "open the full shell (from the console)",
+  usage: "fullscreen",
+  description: ["From the drop-down console, opens the full-screen shell with the same history."],
+  examples: ["fullscreen"],
+  seeAlso: ["exit"],
+  run(_args, _flags, ctx) {
+    if (ctx.env.surface !== "console") return fail("fullscreen: already in the full shell");
+    return { effects: [{ type: "navigate", href: "/shell" }] };
+  },
+};
+
+export const actionCommands = [open, runCmd, graph, gui, recruiter, human, reboot, fullscreen, clear, sudo, exit];
