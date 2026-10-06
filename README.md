@@ -1,114 +1,107 @@
 # Kernel
 
-An interactive developer portfolio: inspectable **Systems** (architecture, decisions, simulated requests), a skill **Graph**, a git-style **Trace**, an AI **Query** that answers from portfolio data and drives the UI — with two front doors chosen at boot: a fast **recruiter view** at `/` and the **Kernel shell** at `/shell`.
+An interactive developer portfolio with two ways in:
 
-## Boot modes
+- **The recruiter view** (`/`): a fast, normal web page showing projects, experience and skills.
+- **The shell** (`/shell`): a terminal you can explore with commands like `ls`, `cat` and `run atlas`.
 
-Every load of `/` shows a bootloader: **Just show me the work** (recruiter view, preselected) or **Give me a shell**. It boots the preselected option after 3 s (2 s on touch devices); arrow keys or moving the pointer over the menu stop the countdown. Visitors arriving from GitHub, Hacker News, dev.to, Lobsters or Stack Overflow get the shell preselected. Returning visitors get their last mode preselected.
+Visitors can also ask questions in plain English. An AI (Google Gemini) answers using only the portfolio's own content.
 
-- Switch any time: the `human · shell` pill in the header, `` ` `` on any page for a drop-down console, `exit` / `human` in the shell.
-- Links: `/` (adaptive), `/?mode=human`, `/?mode=shell`, `/shell?cmd=run%20atlas`, `/?boot=1` (always show the bootloader — handy for demos).
-- Old `/?cmd=…` links redirect to `/shell?cmd=…`; `/human` redirects to `/#human`.
+## Quick start
 
-## The shell
-
-The shell at `/shell` is **Kernel**, over a virtual filesystem generated from `content/`:
-
-```
-~/systems/<name>/   README.md · architecture · decisions.md · tradeoffs.md · impact.txt · stack.txt · links.txt
-~/skills/           <capability>.md · graph
-~/stack/            <technology>.txt
-~/README.md · about.md · career.log · contact.txt · resume.pdf
-```
-
-Try `ls`, `cd systems/atlas`, `cat decisions.md`, `run atlas`, `grep -i rag . | head -n 5`, `find . -name *.md`, `man kernel`, `history`, or ask anything in plain English. Everything underlined is clickable; the recruiter view is one `exit` away (`gui <page>` opens a specific page).
-
-Engineering introspection: `git log [system] [--oneline]`, `git show <hash>`, `git branch`, `diff atlas relay`, `status`, `ps`, `top`, `env`, `benchmark <system>` (prints only measurements you add as `benchmarks` in a system's content), `graph --depth 2 atlas`. Ask with `ask <question>` or just type it — answers are followed by a clickable tree of related systems. `open atlas --full` jumps to the visual case study.
-
-**Share a demo:** any command can be a link — `https://<your-site>/shell?cmd=run%20atlas` or `/shell?cmd=man%20atlas` (up to 5 commands separated by `;`).
-
-Shortcuts: Tab completes (press again for a menu; Tab/Shift+Tab cycle), → accepts the grey history/completion suggestion, ↑/↓ history, Ctrl+R search, Ctrl+A/E/U/W editing, Ctrl+C cancel, Ctrl+L clear, Esc closes the side pane.
-
-Built with Next.js 16, TypeScript, Tailwind CSS 4, Motion, d3-force, Zod and the Vercel AI SDK (Gemini).
-
-## Run locally
+You need [Node.js](https://nodejs.org) 20 or newer.
 
 ```bash
 npm install
-cp .env.example .env.local   # optional: add GEMINI_API_KEY
-npm run dev                  # http://localhost:3000
+npm run dev
 ```
 
-Without `GEMINI_API_KEY`, Query still works in **offline mode** (local search answers).
+Open <http://localhost:3000>.
+
+The AI is optional. Without a key, questions get answers from a local search instead. To turn the AI on:
+
+```bash
+cp .env.example .env.local
+# then put your free key from https://aistudio.google.com/apikey into GEMINI_API_KEY
+```
+
+## How visitors use it
+
+Opening `/` shows a short boot menu with two options:
+
+| Option | What it opens |
+|---|---|
+| **Just show me the work** | The recruiter view (preselected for most visitors) |
+| **Give me a shell** | The terminal |
+
+The preselected option starts by itself after 3 seconds (2 seconds on phones), and moving the mouse over the menu stops the countdown. A returning visitor gets the mode they used last time preselected. Visitors coming from GitHub or Hacker News get the shell preselected.
+
+There are several ways to switch modes later:
+
+- the `human · shell` switch in the header;
+- the `` ` `` key on any page, which opens a drop-down console;
+- typing `exit` in the shell.
+
+### Handy links
+
+| Link | Does |
+|---|---|
+| `/?mode=human` | Opens the recruiter view directly |
+| `/?mode=shell` | Opens the shell directly |
+| `/shell?cmd=run%20atlas` | Opens the shell and runs a command (up to 5 commands, separated by `;`) |
+| `/?boot=1` | Always shows the boot menu (good for demos) |
+
+### Shell cheat sheet
+
+| Try | To |
+|---|---|
+| `ls`, `cd systems/atlas`, `cat decisions.md` | Browse projects like folders |
+| `run atlas` | Watch a simulated request go through a system |
+| `git log`, `diff atlas relay`, `graph atlas` | Look at history, compare systems, see skill links |
+| `ask <question>` (or just type the question) | Ask the AI |
+| `man kernel`, `help` | See every command |
+
+Tab autocompletes, ↑/↓ scrolls through history, and Ctrl+L clears the screen.
+
+## Put in your own content
+
+Everything on the site comes from the `content/` folder. Right now it holds **sample** data.
+
+| File | What goes in it |
+|---|---|
+| `content/identity.ts` | Name, role, tagline, summary, links |
+| `content/technologies.ts` | Your tech stack |
+| `content/capabilities.ts` | What you can do |
+| `content/experience.ts` | Jobs and milestones |
+| `content/systems/*.ts` | One file per project (also add it to `content/systems/index.ts`) |
+| `public/resume.pdf` | Your résumé |
+
+Once an item holds real content, set `placeholder: false` on it. Then run `npm test`. If something is wrong, the test names the exact field, for example `systems.atlas.architecture.edges[3]: unknown node "ghost"`.
+
+## Commands
 
 | Command | What it does |
 |---|---|
-| `npm run dev` | dev server |
-| `npm test` | unit tests (content integrity, graph, search, command, query API) |
-| `npm run lint` | ESLint |
-| `npm run build` | production build (fails on invalid content) |
+| `npm run dev` | Start the site locally |
+| `npm test` | Run the tests |
+| `npm run lint` | Check code style |
+| `npm run build` | Build for production (fails if the content is invalid) |
+| `npm run check` | All of the above: run it before deploying |
 
-## Make it yours — replace the placeholder content
+## Deploy
 
-Everything shown on the site comes from `content/`. Files currently holding **sample** data (marked `// PLACEHOLDER` and `placeholder: true`):
+See **[docs/DEPLOY.md](docs/DEPLOY.md)**. It walks through a free Vercel deploy step by step.
 
-| File | What to put there |
-|---|---|
-| `content/identity.ts` | name, role, tagline, summary, links, principles, about |
-| `content/technologies.ts` | your stack (`id`, `name`, `category`) |
-| `content/capabilities.ts` | what you can do, grouped by technologies |
-| `content/experience.ts` | roles as branches, milestones as commits (7-char hex hashes, `YYYY-MM` dates) |
-| `content/systems/*.ts` | one file per project — register it in `content/systems/index.ts` |
-| `public/resume.pdf` | your resume |
-
-Set `placeholder: false` on each item once it's real (the dev-only "sample content" tag disappears).
-
-**Architecture diagrams:** each node has `x` and `y` from 0–100 (left→right, top→bottom). **Simulations** are optional; each step lights up a node by `nodeId`.
-
-Run `npm test` after editing — it pinpoints any broken reference, e.g. `systems.atlas.architecture.edges[3]: unknown node "ghost"`.
-
-## Deploy (free) — checklist
-
-Nothing has been published yet. When the real content is in:
-
-1. **Replace the sample content** in `content/` and `public/resume.pdf`, then run:
-   ```bash
-   npm run check        # typecheck + lint + tests + production build
-   ```
-2. **Create a GitHub repository and push** (private shown; use `--public` if you prefer):
-   ```bash
-   gh repo create kernel --private --source . --push
-   ```
-3. **Import on Vercel:** go to <https://vercel.com/new>, pick the repository (Next.js is detected automatically).
-4. **Environment variables** (Vercel → Project → Settings → Environment Variables):
-
-   | Variable | Required | Value |
-   |---|---|---|
-   | `GEMINI_API_KEY` | recommended | free key from Google AI Studio |
-   | `NEXT_PUBLIC_SITE_URL` | recommended | e.g. `https://your-name.vercel.app` |
-   | `GEMINI_MODEL` | optional | defaults to `gemini-flash-latest` |
-   | `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` | optional | enables analytics for that domain |
-
-5. **Redeploy** so the variables apply, then smoke-test:
-   `/`, `/shell`, `/?cmd=man%20kernel` (should redirect to `/shell`), `/shell?cmd=run%20atlas`, `/systems`, `/opengraph-image`, `/sitemap.xml`, and ask a question in the shell (status bar should read `ai:online`).
-6. Optional: add a custom domain in Vercel → Domains, then update `NEXT_PUBLIC_SITE_URL`.
-
-## Analytics (optional)
-
-Set `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` to load [Plausible](https://plausible.io). No cookies, nothing personal: page views plus a `command` event whose only property is the command name (e.g. `grep`, `ask`) — never arguments or questions.
-
-## Project structure
+## Project layout
 
 ```
-content/   portfolio data (the only place facts live)
-core/      pure TypeScript: schemas, selectors, graph, search, actions, query, rate limit; core/shell = the shell engine
-server/    AI query handler (Gemini streaming + local fallback)
-app/       routes: / systems systems/[slug] graph trace human connect api/query
-components/ UI
-tests/     Vitest unit tests
-docs/      design spec and implementation plan
+content/     your portfolio data (the only place facts live)
+app/         pages and API routes
+components/  UI pieces
+core/        pure logic: shell engine, search, graph, boot decisions
+server/      the AI question handler
+tests/       unit tests
+docs/        deploy guide, design specs and plans
 ```
 
-## Keyboard
-
-`/` ask (visual pages) · `` ` `` drop-down console · `⌘K` / `Ctrl+K` full shell · `Esc` close
+Built with Next.js 16, TypeScript, Tailwind CSS 4 and the Vercel AI SDK (Gemini).
