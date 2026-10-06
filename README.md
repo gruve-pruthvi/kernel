@@ -15,6 +15,8 @@ The home page is **Kernel**, a shell over a virtual filesystem generated from `c
 
 Try `ls`, `cd systems/atlas`, `cat decisions.md`, `run atlas`, `grep -i rag . | head -n 5`, `find . -name *.md`, `man kernel`, `history`, or ask anything in plain English. Everything underlined is clickable; the visual site is one `gui` away.
 
+Engineering introspection: `git log [system] [--oneline]`, `git show <hash>`, `git branch`, `diff atlas relay`, `status`, `ps`, `top`, `env`, `benchmark <system>` (prints only measurements you add as `benchmarks` in a system's content), `graph --depth 2 atlas`. Ask with `ask <question>` or just type it — answers are followed by a clickable tree of related systems. `open atlas --full` jumps to the visual case study.
+
 **Share a demo:** any command can be a link — `https://<your-site>/?cmd=run%20atlas` or `/?cmd=man%20atlas` (up to 5 commands separated by `;`).
 
 Shortcuts: Tab completes (press again for a menu; Tab/Shift+Tab cycle), → accepts the grey history/completion suggestion, ↑/↓ history, Ctrl+R search, Ctrl+A/E/U/W editing, Ctrl+C cancel, Ctrl+L clear, Esc closes the side pane.
@@ -57,14 +59,35 @@ Set `placeholder: false` on each item once it's real (the dev-only "sample conte
 
 Run `npm test` after editing — it pinpoints any broken reference, e.g. `systems.atlas.architecture.edges[3]: unknown node "ghost"`.
 
-## Deploy free on Vercel
+## Deploy (free) — checklist
 
-1. Push this folder to a GitHub repository.
-2. Go to [vercel.com/new](https://vercel.com/new), import the repo (framework: Next.js is auto-detected).
-3. Add environment variable `GEMINI_API_KEY` — free key from [Google AI Studio](https://aistudio.google.com/apikey). Optional: `GEMINI_MODEL` (default `gemini-flash-latest`).
-4. Deploy. Every push to `main` redeploys.
+Nothing has been published yet. When the real content is in:
 
-The Hobby plan is free; the site is static except `/api/query`. Query is rate-limited per IP (10/min, 60/day, best-effort in memory).
+1. **Replace the sample content** in `content/` and `public/resume.pdf`, then run:
+   ```bash
+   npm run check        # typecheck + lint + tests + production build
+   ```
+2. **Create a GitHub repository and push** (private shown; use `--public` if you prefer):
+   ```bash
+   gh repo create kernel --private --source . --push
+   ```
+3. **Import on Vercel:** go to <https://vercel.com/new>, pick the repository (Next.js is detected automatically).
+4. **Environment variables** (Vercel → Project → Settings → Environment Variables):
+
+   | Variable | Required | Value |
+   |---|---|---|
+   | `GEMINI_API_KEY` | recommended | free key from Google AI Studio |
+   | `NEXT_PUBLIC_SITE_URL` | recommended | e.g. `https://your-name.vercel.app` |
+   | `GEMINI_MODEL` | optional | defaults to `gemini-flash-latest` |
+   | `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` | optional | enables analytics for that domain |
+
+5. **Redeploy** so the variables apply, then smoke-test:
+   `/`, `/?cmd=man%20kernel`, `/?cmd=run%20atlas`, `/systems`, `/opengraph-image`, `/sitemap.xml`, and ask a question in the shell (status bar should read `ai:online`).
+6. Optional: add a custom domain in Vercel → Domains, then update `NEXT_PUBLIC_SITE_URL`.
+
+## Analytics (optional)
+
+Set `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` to load [Plausible](https://plausible.io). No cookies, nothing personal: page views plus a `command` event whose only property is the command name (e.g. `grep`, `ask`) — never arguments or questions.
 
 ## Project structure
 

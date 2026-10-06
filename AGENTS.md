@@ -20,3 +20,5 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Shell spec: `docs/superpowers/specs/2026-10-05-kernel-shell-v1-design.md`; plan: `docs/superpowers/plans/2026-10-05-kernel-shell-v1.md`.
 - `core/shell/` is pure: commands return `{ output, effects, state }`; only `components/kernel/Shell.tsx` performs effects.
 - Every new command needs summary, usage, description, examples, seeAlso and tests in `tests/shell/`.
+- Wrap-up spec: `docs/superpowers/specs/2026-10-05-kernel-wrapup-design.md`; plan: `docs/superpowers/plans/2026-10-05-kernel-wrapup.md`.
+- Pure UI policy lives in `components/kernel/policy.ts` and `components/kernel/keys.ts` (unit-tested); keep Shell.tsx free of logic that can be tested without React.
