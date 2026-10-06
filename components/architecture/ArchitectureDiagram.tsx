@@ -20,6 +20,7 @@ export function ArchitectureDiagram({
   motion,
   onHover,
   onSelect,
+  className = "h-auto w-full min-w-[720px]",
 }: {
   architecture: Architecture;
   focusId: string | null;
@@ -27,6 +28,7 @@ export function ArchitectureDiagram({
   motion: boolean;
   onHover: (id: string | null) => void;
   onSelect: (id: string) => void;
+  className?: string;
 }) {
   const pos = new Map(architecture.nodes.map((n) => [n.id, toView(n.x, n.y)]));
   const lit = focusId ?? activeId;
@@ -41,7 +43,7 @@ export function ArchitectureDiagram({
   const dim = (id: string) => Boolean(lit) && !connected.has(id);
 
   return (
-    <svg viewBox={`0 0 ${VIEW.width} ${VIEW.height}`} className="h-auto w-full min-w-[720px]" role="group" aria-label="System architecture">
+    <svg viewBox={`0 0 ${VIEW.width} ${VIEW.height}`} className={className} role="group" aria-label="System architecture">
       <defs>
         <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
           <path d="M0 0 L10 5 L0 10 z" fill="var(--border-strong)" />

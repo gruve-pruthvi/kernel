@@ -1,15 +1,27 @@
 import type { Metadata } from "next";
-import { getIdentity } from "@/core/content";
+import { Experience } from "@/components/front/Experience";
+import { Flagships } from "@/components/front/Flagships";
+import { Hero } from "@/components/front/Hero";
+import { HowIThink } from "@/components/front/HowIThink";
+import { ProofStrip } from "@/components/front/ProofStrip";
+import { Stack } from "@/components/front/Stack";
+import { portfolio } from "@/core/content";
+import { flagships, proofStats, stackGroups, timeline } from "@/core/front";
 
-const identity = getIdentity();
+const identity = portfolio.identity;
 
-export const metadata: Metadata = { title: { absolute: `${identity.name} — ${identity.role}` } };
+export const metadata: Metadata = { title: { absolute: `${identity.name} — ${identity.role}` }, description: identity.tagline };
 
 export default function FrontPage() {
   return (
-    <div className="py-14 sm:py-20">
-      <h1 className="text-3xl font-semibold tracking-tight sm:text-5xl">{identity.name}</h1>
-      <p className="mt-3 text-lg text-muted">{identity.role}</p>
+    <div className="pb-10">
+      <Hero identity={identity} />
+      <ProofStrip stats={proofStats(portfolio)} />
+      <Flagships systems={flagships(portfolio)} p={portfolio} />
+      <div id="ask-slot" />
+      <Experience entries={timeline(portfolio)} />
+      <Stack groups={stackGroups(portfolio)} />
+      <HowIThink identity={identity} />
     </div>
   );
 }
