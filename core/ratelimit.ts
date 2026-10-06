@@ -16,11 +16,13 @@ export function createRateLimiter(opts: { perMinute: number; perDay: number; now
       const lastMinute = recent.filter((h) => t - h < MINUTE);
 
       if (lastMinute.length >= opts.perMinute) {
-        hits.set(key, recent);
+        hits.delete(key);
+      hits.set(key, recent); // re-insert: Map order = least recently used first
         return { ok: false, reason: "minute", retryAfterSec: Math.ceil((lastMinute[0] + MINUTE - t) / 1000) };
       }
       if (recent.length >= opts.perDay) {
-        hits.set(key, recent);
+        hits.delete(key);
+      hits.set(key, recent); // re-insert: Map order = least recently used first
         return { ok: false, reason: "day", retryAfterSec: Math.ceil((recent[0] + DAY - t) / 1000) };
       }
 
@@ -29,7 +31,8 @@ export function createRateLimiter(opts: { perMinute: number; perDay: number; now
         if (oldest !== undefined) hits.delete(oldest);
       }
       recent.push(t);
-      hits.set(key, recent);
+      hits.delete(key);
+      hits.set(key, recent); // re-insert: Map order = least recently used first
       return { ok: true };
     },
   };

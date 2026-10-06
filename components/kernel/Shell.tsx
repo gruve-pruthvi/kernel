@@ -24,7 +24,7 @@ import { kernel, useKernel } from "@/lib/store";
 import { useMotionAllowed } from "@/lib/use-motion-allowed";
 import type { QueryEvent } from "@/server/query-handler";
 import { blockWhileBusy, tabDecision } from "./keys";
-import { comboboxProps, drainCount, mobileKeys, optionId, splitRows, type MobileKeyId } from "./policy";
+import { comboboxProps, createTypewriter, mobileKeys, optionId, splitRows, type MobileKeyId } from "./policy";
 import { PromptText, Transcript, type Row } from "./Transcript";
 import { ViewPane } from "./ViewPane";
 
@@ -85,7 +85,7 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
   const [ai, setAi] = useState<Ai>("unknown");
   const [clock, setClock] = useState("");
   const envRef = useRef<RuntimeEnv>({ theme: "dark", motion: "full", recruiter: false, ai: "unknown", pane: null });
-  const cancel = useRef<{ cancelled: boolean; abort?: AbortController }>({ cancelled: false });
+  const cancel = useRef<{ cancelled: boolean; abort?: AbortController; onCancel?: () => void }>({ cancelled: false });
   const aiHistory = useRef<{ role: "user" | "assistant"; content: string }[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -208,29 +208,24 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
 
   const ask = useCallback(
     async (question: string) => {
+      const session = cancel.current;
       const abort = new AbortController();
-      cancel.current.abort = abort;
+      session.abort = abort;
       const [rowId] = add([out(seg("▸ ", "accent"), seg("thinking…", "faint"))], true);
-      let received = "";
-      let shown = 0;
-      let streaming = true;
       let sources: string[] = [];
-
-      // Typewriter: reveal the received text at a steady rate that catches up with bursts (instant without motion).
-      const pump = (async () => {
-        let last = performance.now();
-        while (streaming || shown < received.length) {
-          if (cancel.current.cancelled) return;
-          const now = await nextFrame();
-          const backlog = received.length - shown;
-          const n = motionRef.current ? drainCount(backlog, now - last) : backlog;
-          last = now;
-          if (n > 0) {
-            shown += n;
-            replace(rowId, answerLine(received.slice(0, shown)), true);
-          }
-        }
-      })();
+      // Typewriter: steady reveal that catches up with bursts; stop() guarantees no later writes.
+      const tw = createTypewriter({
+        write: (shown) => replace(rowId, answerLine(shown), true),
+        nextFrame,
+        instant: () => !motionRef.current,
+        now: () => performance.now(),
+      });
+      session.onCancel = () => void tw.stop();
+      const interrupted = async () => {
+        await tw.stop();
+        replace(rowId, answerLine(tw.shown, [seg(" ^C", "faint")]));
+        aiHistory.current.pop();
+      };
 
       aiHistory.current = [...aiHistory.current, { role: "user" as const, content: question.slice(0, 500) }].slice(-10);
       try {
@@ -242,8 +237,7 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
         });
         if (!res.ok || !res.body) {
           const data = (await res.json().catch(() => ({}))) as { error?: string };
-          streaming = false;
-          await pump;
+          await tw.stop();
           replace(rowId, out(seg("▸ ", "error"), seg(data.error ?? "query failed — try again", "error")));
           aiHistory.current.pop();
           return;
@@ -254,7 +248,7 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
           if (e.type === "meta") {
             setAi(e.mode === "ai" ? "online" : "offline");
             sources = e.sources.slice(0, 4).map((s) => s.title);
-          } else if (e.type === "text") received += e.text;
+          } else if (e.type === "text") tw.push(e.text);
           else if (e.type === "action" || e.type === "suggestion") applyAction(e.action);
           else if (e.type === "error") add([out(seg(e.message, "error"))]);
         });
@@ -264,23 +258,18 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
           lines.push(decoder.decode(value, { stream: true }));
         }
         lines.flush();
-        streaming = false;
-        await pump;
-        if (cancel.current.cancelled) {
-          // Stopped while the typewriter was still revealing: keep what was shown.
-          replace(rowId, answerLine(received.slice(0, shown), [seg(" ^C", "faint")]));
-          aiHistory.current.pop();
-          return;
-        }
+        await tw.end();
+        if (session.cancelled) return interrupted();
+        const received = tw.received;
         replace(rowId, answerLine(received));
         if (received) aiHistory.current = [...aiHistory.current, { role: "assistant" as const, content: received.slice(0, 1500) }];
         else aiHistory.current.pop();
         if (sources.length) add([out(seg(`  sources: ${sources.join(" · ")}`, "faint"))]);
         add(explainLines(explain(portfolio, question)));
       } catch {
-        streaming = false;
-        if (cancel.current.cancelled) replace(rowId, answerLine(received.slice(0, shown), [seg(" ^C", "faint")]));
-        else replace(rowId, out(seg("▸ ", "error"), seg("network error — try again", "error")));
+        if (session.cancelled) return interrupted();
+        await tw.stop();
+        replace(rowId, out(seg("▸ ", "error"), seg("network error — try again", "error")));
         aiHistory.current.pop();
       }
     },
@@ -361,6 +350,7 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
 
   const cancelRunning = () => {
     cancel.current.cancelled = true;
+    cancel.current.onCancel?.();
     cancel.current.abort?.abort();
   };
 

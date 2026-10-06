@@ -1,6 +1,6 @@
 import type { Portfolio } from "../schema";
 import { COMMANDS, commandNames, getCommand } from "./commands";
-import { buildFs } from "./fs";
+import { buildFs, resolve } from "./fs";
 import { expandHistory, parse, parseFlags } from "./parser";
 import { out, plainText, seg } from "./registry";
 import { DEFAULT_ENV, type Effect, type HistoryEntry, type OutputItem, type Result, type RuntimeEnv, type ShellState } from "./types";
@@ -12,7 +12,7 @@ export function initialState(now: number, history: HistoryEntry[] = []): ShellSt
   return { cwd: [], prevCwd: [], history: history.slice(-HISTORY_LIMIT), sessionStart: now, stats: { commands: 0, simulations: 0 } };
 }
 
-const PROSE_WORD = /^[\p{L}\p{N}'’",.!?()-]+$/u;
+const PROSE_WORD = /^[\p{L}\p{N}'’",.!?()/-]+$/u;
 
 /**
  * Plain English goes to the AI. Decided on the raw line (apostrophes would otherwise open a quote):
@@ -24,7 +24,8 @@ const QUESTION_WORDS = new Set([
   "is", "are", "can", "could", "does", "do", "did", "tell", "show", "explain", "give", "list", "has", "have", "any",
 ]);
 
-export function isQuestion(line: string): boolean {
+/** `isPath` lets the executor say whether an argument names a real file; without it only explicit paths count. */
+export function isQuestion(line: string, isPath: (word: string) => boolean = () => false): boolean {
   if (/[|;]/.test(line)) return false;
   const words = line.trim().split(/\s+/);
   const first = words[0];
@@ -32,8 +33,10 @@ export function isQuestion(line: string): boolean {
   const prose = words.every((w) => PROSE_WORD.test(w)) && !words.slice(1).some((w) => w.startsWith("-"));
   const asked = /\?$/.test(line);
   if (getCommand(first)) return asked && words.length >= 3 && prose;
-  const pathLike = words.slice(1).some((w) => w === "." || w.includes("/") || w.includes("*") || w.startsWith("-") || /\.[a-z0-9]+$/i.test(w));
-  if (!asked && pathLike && !QUESTION_WORDS.has(first.toLowerCase()) && nearest(first, commandNames())) return false;
+  // Path-like = explicit path, flag, glob, "." or an entry that really exists — not "node.js" or "ci/cd" in prose.
+  const pathLike = words.slice(1).some((w) => w === "." || /^(\.{1,2}\/|~\/|\/)/.test(w) || w.includes("*") || w.startsWith("-") || isPath(w));
+  const near = nearest(first, commandNames(), first.length <= 3 ? 1 : 2);
+  if (!asked && pathLike && !QUESTION_WORDS.has(first.toLowerCase()) && near) return false;
   if (asked) return true;
   return words.length >= 2 && prose && /^[\p{L}][\p{L}'’]*$/u.test(first);
 }
@@ -71,9 +74,9 @@ export function execute(
     pipelines = pipelines.slice(0, opts.maxPipelines);
   }
 
-  if (isQuestion(line)) return { output, effects: [{ type: "ask", question: line }], state: st, exitCode: 0 };
-
   const fs = buildFs(p);
+  if (isQuestion(line, (w) => resolve(fs, state.cwd, w) !== undefined)) return { output, effects: [{ type: "ask", question: line }], state: st, exitCode: 0 };
+
   let exitCode: 0 | 1 = 0;
 
   for (const pipeline of pipelines) {

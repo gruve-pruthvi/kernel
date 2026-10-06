@@ -47,3 +47,53 @@ export function drainCount(buffered: number, elapsedMs: number, baseCps = 60, ta
   const n = Math.ceil((baseCps * elapsedMs) / 1000 + (buffered * elapsedMs) / tauMs);
   return Math.min(buffered, Math.max(1, n));
 }
+
+/**
+ * Typewriter session for a streamed answer. `push` adds received text, `end` resolves once everything is shown,
+ * `stop` freezes what is shown and guarantees no further writes (used for Ctrl+C and network errors).
+ */
+export function createTypewriter(opts: {
+  write: (shown: string) => void;
+  nextFrame: () => Promise<number>;
+  instant: () => boolean;
+  now: () => number;
+}) {
+  let received = "";
+  let shown = 0;
+  let streaming = true;
+  let stopped = false;
+  const loop = (async () => {
+    let last = opts.now();
+    while (!stopped && (streaming || shown < received.length)) {
+      const t = await opts.nextFrame();
+      if (stopped) return;
+      const backlog = received.length - shown;
+      const n = opts.instant() ? backlog : drainCount(backlog, t - last);
+      last = t;
+      if (n > 0) {
+        shown += n;
+        opts.write(received.slice(0, shown));
+      }
+    }
+  })();
+  return {
+    push(text: string) {
+      received += text;
+    },
+    end() {
+      streaming = false;
+      return loop;
+    },
+    stop() {
+      stopped = true;
+      streaming = false;
+      return Promise.resolve();
+    },
+    get shown() {
+      return received.slice(0, shown);
+    },
+    get received() {
+      return received;
+    },
+  };
+}
