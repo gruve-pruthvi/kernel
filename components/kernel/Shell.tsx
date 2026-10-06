@@ -24,7 +24,7 @@ import { switchMode } from "@/lib/mode";
 import { kernel, useKernel } from "@/lib/store";
 import { useMotionAllowed } from "@/lib/use-motion-allowed";
 import type { QueryEvent } from "@/server/query-handler";
-import { blockWhileBusy, tabDecision } from "./keys";
+import { blockWhileBusy, escapeAction, tabDecision } from "./keys";
 import { comboboxProps, createTypewriter, mobileKeys, optionId, splitRows, type MobileKeyId } from "./policy";
 import { PromptText, Transcript, type Row } from "./Transcript";
 import { ViewPane } from "./ViewPane";
@@ -524,9 +524,11 @@ export function Shell({
     }
     if (k === "Escape") {
       e.nativeEvent.stopImmediatePropagation();
-      if (menu) setMenu(null);
-      else if (search) setSearch(null);
-      else showPane(null);
+      const layer = escapeAction({ menu: Boolean(menu), search: Boolean(search), pane: Boolean(pane), console: variant === "console" });
+      if (layer === "menu") setMenu(null);
+      else if (layer === "search") setSearch(null);
+      else if (layer === "pane") showPane(null);
+      else if (layer === "exit") onExit?.();
       return;
     }
     if (menu) {

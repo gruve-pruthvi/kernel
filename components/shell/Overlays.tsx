@@ -1,10 +1,14 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import dynamic from "next/dynamic";
+import { useEffect, useRef, useState } from "react";
+import { consoleKeyAction } from "@/components/kernel/keys";
 import { QueryPanel } from "@/components/query/QueryPanel";
 import { modeForPath } from "@/core/boot";
 import { kernel, kernelSnapshot, readBootPrefs, useKernel } from "@/lib/store";
+
+const ConsoleDrawer = dynamic(() => import("@/components/kernel/ConsoleDrawer"), { ssr: false });
 
 function isTyping(target: EventTarget | null) {
   const el = target as HTMLElement | null;
@@ -14,9 +18,33 @@ function isTyping(target: EventTarget | null) {
 export function Overlays() {
   const router = useRouter();
   const pathname = usePathname();
+  const [consoleOpen, setConsoleOpen] = useState(false);
+  const consoleOpenRef = useRef(false);
+  useEffect(() => {
+    consoleOpenRef.current = consoleOpen;
+  }, [consoleOpen]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- close the console on navigation (e.g. `fullscreen`, `human`)
+  useEffect(() => setConsoleOpen(false), [pathname]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const consoleAction = consoleKeyAction({
+        key: e.key,
+        meta: e.metaKey,
+        ctrl: e.ctrlKey,
+        alt: e.altKey,
+        editable: isTyping(e.target),
+        inConsole: Boolean(target?.closest?.("#kernel-console")),
+        pathname,
+        open: consoleOpenRef.current,
+        booting: Boolean(document.documentElement.dataset.boot),
+      });
+      if (consoleAction) {
+        e.preventDefault();
+        setConsoleOpen(consoleAction === "open");
+        return;
+      }
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         if (pathname !== "/shell") router.push("/shell");
@@ -46,6 +74,7 @@ export function Overlays() {
 
   return (
     <>
+      {consoleOpen && <ConsoleDrawer onClose={() => setConsoleOpen(false)} />}
       <QueryPanel />
       {reboot && (
         <div role="status" className="fixed inset-0 z-[70] grid place-items-center bg-bg font-mono text-sm text-[var(--k-store)]">

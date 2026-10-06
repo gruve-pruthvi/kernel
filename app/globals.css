@@ -171,3 +171,13 @@ body {
     animation: none !important;
   }
 }
+
+/* Drop-down console (` on GUI pages); the global reduced-motion rule removes the slide. */
+.console-drawer {
+  animation: kernel-console-in 180ms ease-out;
+}
+@keyframes kernel-console-in {
+  from {
+    transform: translateY(-100%);
+  }
+}
