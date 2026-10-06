@@ -43,13 +43,6 @@ describe("graph / git / gui / recruiter / clear / easter eggs", () => {
     expect(run("graph nope").text).toBe('graph: nothing matches "nope"');
   });
 
-  it("git log lists commits newest first", () => {
-    const lines = run("git log").text.split("\n");
-    expect(lines[0]).toMatch(/^\* 7f3b2d1 \(feat\/ai-systems\) /);
-    expect(lines).toHaveLength(portfolio.experience.reduce((n, e) => n + e.commits.length, 0));
-    expect(run("git status").text).toBe("git: only `git log` is available for now\nusage: git log");
-  });
-
   it("gui, recruiter, clear", () => {
     expect(run("gui").res.effects).toEqual([{ type: "navigate", href: "/systems" }]);
     expect(run("gui trace").res.effects).toEqual([{ type: "navigate", href: "/trace" }]);

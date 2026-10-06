@@ -1,4 +1,3 @@
-import { formatMonth } from "../../format";
 import { buildGraph, resolveFocus } from "../../graph";
 import { normalise, resolve } from "../fs";
 import { fail, out, seg, type Command } from "../registry";
@@ -85,27 +84,6 @@ const graph: Command = {
   },
 };
 
-const git: Command = {
-  name: "git",
-  group: "actions",
-  summary: "career history as commits",
-  usage: "git log",
-  description: ["`git log` prints documented career milestones as commits, newest first. More git subcommands arrive in a later version."],
-  examples: ["git log", "git log | grep feat"],
-  seeAlso: ["cat", "grep"],
-  run(args, _flags, ctx) {
-    if (args[0] !== "log" || args.length > 1) return fail("git: only `git log` is available for now", `usage: ${this.usage}`);
-    const commits = ctx.p.experience
-      .flatMap((e) => e.commits.map((c) => ({ ...c, branch: e.branch, org: e.organisation })))
-      .sort((a, b) => b.date.localeCompare(a.date));
-    return {
-      output: commits.map((c) =>
-        out(seg("* ", "accent"), seg(c.hash, "warn"), seg(` (${c.branch}) `, "dir"), seg(c.message), seg(`  ${c.org}, ${formatMonth(c.date)}`, "faint")),
-      ),
-    };
-  },
-};
-
 const gui: Command = {
   name: "gui",
   group: "actions",
@@ -183,4 +161,4 @@ const exit: Command = {
   },
 };
 
-export const actionCommands = [open, runCmd, graph, git, gui, recruiter, clear, sudo, exit];
+export const actionCommands = [open, runCmd, graph, gui, recruiter, clear, sudo, exit];

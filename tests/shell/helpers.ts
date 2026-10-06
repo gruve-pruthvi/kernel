@@ -1,5 +1,6 @@
 import { portfolio } from "@/core/content";
 import { execute, initialState } from "@/core/shell/execute";
+import type { Portfolio } from "@/core/schema";
 import type { OutputItem, Result, ShellState } from "@/core/shell/types";
 
 export const NOW = 1_760_000_000_000;
@@ -21,4 +22,9 @@ export function seq(...inputs: string[]): Result {
     state = res.state;
   }
   return res!;
+}
+
+export function runWith(p: Portfolio, input: string) {
+  const res = execute(input, initialState(NOW), p, NOW);
+  return { res, text: textOf(res.output) };
 }

@@ -86,6 +86,18 @@ export const systemSchema = z.object({
     .array(z.object({ label: z.string().min(1), value: z.string().min(1), note: z.string().optional() }))
     .optional(),
   simulation: simulationSchema.optional(),
+  benchmarks: z
+    .array(
+      z.object({
+        metric: z.string().min(1),
+        value: z.string().min(1),
+        unit: z.string().optional(),
+        context: z.string().optional(),
+        measuredAt: yearMonth.optional(),
+        source: z.string().optional(),
+      }),
+    )
+    .optional(),
   links: z
     .object({ repo: z.string().optional(), demo: z.string().optional(), writeup: z.string().optional() })
     .optional(),
