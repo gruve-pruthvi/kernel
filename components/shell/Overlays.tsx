@@ -39,6 +39,7 @@ export function Overlays() {
         pathname,
         open: consoleOpenRef.current,
         booting: Boolean(document.documentElement.dataset.boot),
+        queryOpen: kernelSnapshot().queryOpen,
       });
       if (consoleAction) {
         e.preventDefault();

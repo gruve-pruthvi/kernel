@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { CSSProperties } from "react";
 import { btnGhost, btnPrimary } from "@/components/ui/styles";
 import type { Identity } from "@/core/schema";
+import { AskLink } from "./AskLink";
 
 export function Hero({ identity }: { identity: Identity }) {
   return (
@@ -29,9 +30,7 @@ export function Hero({ identity }: { identity: Identity }) {
             Résumé ↓
           </a>
         )}
-        <a href="#ask" className="inline-flex items-center px-2 text-sm text-muted underline-offset-4 hover:text-text hover:underline">
-          Ask about me →
-        </a>
+        <AskLink />
       </div>
     </section>
   );

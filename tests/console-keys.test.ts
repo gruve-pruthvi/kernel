@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { consoleKeyAction, escapeAction } from "@/components/kernel/keys";
+import { consoleKeyAction, consoleModeAction, escapeAction, focusWrap } from "@/components/kernel/keys";
 
 const k = (patch: Partial<Parameters<typeof consoleKeyAction>[0]> = {}) =>
-  consoleKeyAction({ key: "`", meta: false, ctrl: false, alt: false, editable: false, inConsole: false, pathname: "/", open: false, booting: false, ...patch });
+  consoleKeyAction({ key: "`", meta: false, ctrl: false, alt: false, editable: false, inConsole: false, pathname: "/", open: false, booting: false, queryOpen: false, ...patch });
 
 describe("consoleKeyAction", () => {
   it("backtick opens the console on GUI pages", () => {
@@ -39,5 +39,31 @@ describe("escapeAction", () => {
     expect(escapeAction({ ...base, pane: true })).toBe("pane");
     expect(escapeAction(base)).toBe("exit");
     expect(escapeAction({ ...base, console: false })).toBe("none");
+  });
+});
+
+describe("console vs query panel", () => {
+  it("Escape closes the query panel first when it is open", () => {
+    expect(k({ open: true, key: "Escape", queryOpen: true, editable: true })).toBeNull();
+    expect(k({ open: true, key: "Escape", queryOpen: false })).toBe("close");
+  });
+});
+
+describe("consoleModeAction", () => {
+  it("human in the console on the recruiter page just closes the console", () => {
+    expect(consoleModeAction("human", "/", "console")).toBe("close");
+    expect(consoleModeAction("human", "/systems", "console")).toBe("switch");
+    expect(consoleModeAction("shell", "/", "console")).toBe("switch");
+    expect(consoleModeAction("human", "/shell", "page")).toBe("switch");
+  });
+});
+
+describe("focusWrap", () => {
+  it("wraps Tab and Shift+Tab at the edges of the console only", () => {
+    expect(focusWrap(2, 3, false)).toBe(0);
+    expect(focusWrap(0, 3, true)).toBe(2);
+    expect(focusWrap(1, 3, false)).toBeNull();
+    expect(focusWrap(-1, 3, false)).toBe(0); // focus outside: pull it back in
+    expect(focusWrap(0, 0, false)).toBeNull();
   });
 });

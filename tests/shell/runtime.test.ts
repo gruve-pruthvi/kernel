@@ -57,6 +57,8 @@ describe("ps / top / env", () => {
       expect(text).toContain(line);
     }
     expect(text).toMatch(/SESSION_START=\d\d:\d\d/);
+    expect(withEnv("env", { surface: "console", mode: "human" })).toContain("SURFACE=console");
+    expect(withEnv("env", { surface: "console", mode: "human" })).toContain("MODE=human");
     expect(text).not.toMatch(/KEY|GEMINI/);
   });
 

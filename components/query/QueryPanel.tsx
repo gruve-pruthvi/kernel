@@ -53,6 +53,7 @@ export function QueryPanel() {
   useEffect(() => {
     if (open && seed && nonce !== handledNonce.current) {
       handledNonce.current = nonce;
+      setInput(""); // a seeded question replaces any half-typed draft, as before
       void submit(seed);
     }
   }, [open, seed, nonce, submit]);

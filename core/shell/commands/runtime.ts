@@ -138,6 +138,7 @@ const env: Command = {
       ["THEME", ctx.env.theme],
       ["MOTION", ctx.env.motion],
       ["MODE", ctx.env.mode],
+      ["SURFACE", ctx.env.surface],
       ["AI", ctx.env.ai],
       ["HISTSIZE", String(ctx.state.history.length)],
       ["SESSION_START", hhmm(ctx.state.sessionStart)],

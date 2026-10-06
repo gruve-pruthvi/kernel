@@ -30,6 +30,8 @@ export interface BootSignals {
   forceBoot: boolean;
   isMobile: boolean;
   lateHydration: boolean;
+  /** location.hash: a link to a section of the recruiter page (e.g. "#human"). */
+  anchor: string;
 }
 
 export interface BootDecision {
@@ -62,6 +64,7 @@ export function decideBoot(s: BootSignals): BootDecision {
   const explicit = isMode(s.modeParam) || Boolean(s.cmdParam);
   if (s.forceBoot) return { show: true, preselect, countdownMs, target: preselect };
   if (explicit) return { show: false, preselect, countdownMs, target: preselect };
+  if (s.anchor.length > 1) return { show: false, preselect, countdownMs, target: "human" };
   if (s.lateHydration) return { show: false, preselect, countdownMs, target: "human" };
   if (s.menuSeen && s.storedMode) return { show: false, preselect, countdownMs, target: s.storedMode };
   return { show: true, preselect, countdownMs, target: preselect };
@@ -110,6 +113,7 @@ var p=function(k,v){try{localStorage.setItem(k,v)}catch(e){}};
 if(q.get("boot")==="1"){on();return}
 var m=q.get("mode");if(m==="human"||m==="shell"){p("${MODE_KEY}",m);p("${MENU_KEY}","seen");if(m==="shell")l.replace("/shell");return}
 var s=g("${MODE_KEY}"),seen=g("${MENU_KEY}")==="seen";
+if(l.hash&&l.hash!=="#")return;
 if(seen&&s==="shell"){l.replace("/shell");return}
 if(seen&&s==="human")return;
 on()}catch(e){}})();`;

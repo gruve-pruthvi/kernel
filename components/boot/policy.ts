@@ -20,3 +20,12 @@ export function bootKeyAction(k: { key: string; meta: boolean; ctrl: boolean; al
       return null;
   }
 }
+
+/** Movement (px) a touch must travel before it counts as scrolling rather than a slightly wobbly tap. */
+export const SCROLL_SLOP = 12;
+
+/** A swipe that started outside the menu boots the recruiter view; taps and drags on the menu never do. */
+export function isScrollGesture(start: { x: number; y: number }, now: { x: number; y: number }, startedInMenu: boolean): boolean {
+  if (startedInMenu) return false;
+  return Math.hypot(now.x - start.x, now.y - start.y) > SCROLL_SLOP;
+}

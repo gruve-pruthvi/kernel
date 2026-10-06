@@ -6,7 +6,7 @@ import { flushSync } from "react-dom";
 import { bootLog, bootLogItems, decideBoot, isLateHydration, type BootDecision, type Mode } from "@/core/boot";
 import { portfolio } from "@/core/content";
 import { kernel, readBootPrefs } from "@/lib/store";
-import { bootKeyAction } from "./policy";
+import { bootKeyAction, isScrollGesture } from "./policy";
 
 const LINES = bootLog(portfolio);
 const LINE_MS = 120;
@@ -29,6 +29,7 @@ export function BootOverlay() {
   const [stopped, setStopped] = useState(false);
   const [reduced, setReduced] = useState(false);
   const [announce, setAnnounce] = useState("");
+  const [bootingShell, setBootingShell] = useState(false);
   const done = useRef(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -47,6 +48,7 @@ export function BootOverlay() {
       forceBoot: q.get("boot") === "1",
       isMobile: window.matchMedia("(pointer: coarse)").matches,
       lateHydration: isLateHydration(performance.now(), root.dataset.bootAt),
+      anchor: window.location.hash,
     });
     if (q.get("boot") === "1") window.history.replaceState(null, "", "/");
     if (!d.show) {
@@ -80,6 +82,7 @@ export function BootOverlay() {
       if (mode === "shell") {
         // The shell shows these lines as its first transcript rows and clears data-boot once mounted.
         kernel.handOff(bootLogItems(LINES));
+        setBootingShell(true);
         router.push("/shell");
         return;
       }
@@ -101,14 +104,10 @@ export function BootOverlay() {
     return () => clearTimeout(t);
   }, [phase, shown]);
 
-  // Countdown (stopped by arrow keys or hovering the menu, like GRUB).
+  // Countdown (stopped by arrow keys or moving the pointer over the menu, like GRUB; a resting cursor does not count).
   useEffect(() => {
     if (phase !== "menu" || stopped || !decision) return;
-    if (left <= 0) {
-      boot(decision.preselect);
-      return;
-    }
-    const t = setTimeout(() => setLeft((ms) => ms - 100), 100);
+    const t = setTimeout(() => (left <= 100 ? boot(decision.preselect) : setLeft((ms) => ms - 100)), 100);
     return () => clearTimeout(t);
   }, [phase, stopped, left, decision, boot]);
 
@@ -157,13 +156,25 @@ export function BootOverlay() {
       } else boot("human");
     };
     const onScroll = () => boot("human");
+    // Touch: only a real swipe that starts outside the menu counts; a wobbly tap on an option stays a tap.
+    let touch: { x: number; y: number; inMenu: boolean } | null = null;
+    const onTouchStart = (e: TouchEvent) => {
+      const t = e.touches[0];
+      touch = t ? { x: t.clientX, y: t.clientY, inMenu: Boolean(menuRef.current?.contains(e.target as Node)) } : null;
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      const t = e.touches[0];
+      if (touch && t && isScrollGesture(touch, { x: t.clientX, y: t.clientY }, touch.inMenu)) boot("human");
+    };
     window.addEventListener("keydown", onKey);
     window.addEventListener("wheel", onScroll, { passive: true });
-    window.addEventListener("touchmove", onScroll, { passive: true });
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
     return () => {
       window.removeEventListener("keydown", onKey);
       window.removeEventListener("wheel", onScroll);
-      window.removeEventListener("touchmove", onScroll);
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchmove", onTouchMove);
     };
   }, [phase, index, boot]);
 
@@ -171,11 +182,13 @@ export function BootOverlay() {
 
   const preselected = OPTIONS.find((o) => o.mode === decision.preselect) ?? OPTIONS[0];
   const seconds = decision.countdownMs / 1000;
-  const status = stopped
-    ? "countdown stopped"
-    : reduced
-      ? `starts "${preselected.label}" in ${seconds} seconds`
-      : `booting "${preselected.label}" in ${Math.max(1, Math.ceil(left / 1000))}…`;
+  const status = bootingShell
+    ? "booting shell…"
+    : stopped
+      ? "countdown stopped"
+      : reduced
+        ? `starts "${preselected.label}" in ${seconds} seconds`
+        : `booting "${preselected.label}" in ${Math.max(1, Math.ceil(left / 1000))}…`;
 
   return (
     <div

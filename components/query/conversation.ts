@@ -16,6 +16,13 @@ export type Message = {
   pending?: boolean;
 };
 
+/** Text for a screen-reader announcement: the last answer once it has finished streaming (markdown emphasis stripped). */
+export function announcementFor(messages: Message[]): string {
+  const last = messages[messages.length - 1];
+  if (!last || last.role !== "assistant" || last.pending) return "";
+  return last.error ?? last.content.replace(/[*_`#]/g, "").trim();
+}
+
 export type Turn = { role: "user" | "assistant"; content: string };
 
 /** Conversation sent to /api/query: no failed turns, last 12, starting with the visitor. */

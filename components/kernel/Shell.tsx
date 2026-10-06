@@ -1,9 +1,10 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState, ViewTransition } from "react";
 import { createLineDecoder } from "@/components/query/stream";
 import { validateAction, type UiAction } from "@/core/actions";
+import { modeForPath } from "@/core/boot";
 import { getSystem, portfolio } from "@/core/content";
 import type { GraphEdge } from "@/core/graph";
 import type { PositionedNode } from "@/core/graph-layout";
@@ -24,7 +25,7 @@ import { switchMode } from "@/lib/mode";
 import { kernel, useKernel } from "@/lib/store";
 import { useMotionAllowed } from "@/lib/use-motion-allowed";
 import type { QueryEvent } from "@/server/query-handler";
-import { blockWhileBusy, escapeAction, tabDecision } from "./keys";
+import { blockWhileBusy, consoleModeAction, escapeAction, tabDecision } from "./keys";
 import { comboboxProps, createTypewriter, mobileKeys, optionId, splitRows, type MobileKeyId } from "./policy";
 import { PromptText, Transcript, type Row } from "./Transcript";
 import { ViewPane } from "./ViewPane";
@@ -76,6 +77,7 @@ export function Shell({
   onExit?: () => void;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const motion = useMotionAllowed();
   const theme = useKernel((s) => s.theme);
   const motionRef = useRef(motion);
@@ -107,12 +109,13 @@ export function Shell({
     envRef.current = {
       theme,
       motion: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "reduced" : "full",
-      mode: "shell",
+      // In the drop-down console, the mode is the page underneath (a recruiter page is "human").
+      mode: variant === "console" ? modeForPath(pathname) : "shell",
       surface: variant,
       ai,
       pane: pane?.view.type ?? null,
     };
-  }, [motion, theme, ai, pane, variant]);
+  }, [motion, theme, ai, pane, variant, pathname]);
 
   /** Pane open/close/switch animates (view transition); activeId changes during a simulation do not. */
   const showPane = useCallback((next: Pane) => startTransition(() => setPaneState(next)), []);
@@ -319,7 +322,8 @@ export function Shell({
           setRows([]);
           return;
         case "mode":
-          void switchMode(e.mode, router, motionRef.current);
+          if (consoleModeAction(e.mode, pathname, variant) === "close") onExit?.();
+          else void switchMode(e.mode, router, motionRef.current);
           return;
         case "exit":
           if (onExit) onExit();
@@ -327,7 +331,7 @@ export function Shell({
           return;
       }
     },
-    [ask, onExit, playSimulation, router, showPane],
+    [ask, onExit, pathname, playSimulation, router, showPane, variant],
   );
 
   const run = useCallback(

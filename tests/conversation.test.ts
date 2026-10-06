@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyEvent, historyFor, type Message } from "@/components/query/conversation";
+import { announcementFor, applyEvent, historyFor, type Message } from "@/components/query/conversation";
 import { portfolio } from "@/core/content";
 
 const blank: Message = { role: "assistant", content: "", pending: true };
@@ -48,5 +48,14 @@ describe("historyFor", () => {
     expect(h.length).toBeLessThanOrEqual(12);
     expect(h[0].role).toBe("user");
     expect(h.at(-1)).toEqual({ role: "user", content: "last" });
+  });
+});
+
+describe("announcementFor", () => {
+  it("announces only a finished answer, once", () => {
+    expect(announcementFor([])).toBe("");
+    expect(announcementFor([{ role: "user", content: "q" }, { role: "assistant", content: "Hal", pending: true }])).toBe("");
+    expect(announcementFor([{ role: "user", content: "q" }, { role: "assistant", content: "**Atlas** answers." }])).toBe("Atlas answers.");
+    expect(announcementFor([{ role: "user", content: "q" }, { role: "assistant", content: "", error: "rate limited" }])).toBe("rate limited");
   });
 });

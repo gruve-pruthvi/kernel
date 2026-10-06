@@ -13,6 +13,7 @@ const base: BootSignals = {
   forceBoot: false,
   isMobile: false,
   lateHydration: false,
+  anchor: "",
 };
 const sig = (patch: Partial<BootSignals>): BootSignals => ({ ...base, ...patch });
 const textOf = (items: ReturnType<typeof bootLogItems>) =>
@@ -86,7 +87,7 @@ describe("bootLog", () => {
 });
 
 /** Runs the inline script against fake browser globals. */
-function runScript(opts: { path?: string; search?: string; storage?: Record<string, string> | "blocked" }) {
+function runScript(opts: { path?: string; search?: string; hash?: string; storage?: Record<string, string> | "blocked" }) {
   const store = opts.storage === "blocked" ? null : { ...(opts.storage ?? {}) };
   const dataset: Record<string, string> = {};
   let replaced: string | null = null;
@@ -102,7 +103,7 @@ function runScript(opts: { path?: string; search?: string; storage?: Record<stri
   };
   const context = {
     document: { documentElement: { dataset } },
-    location: { pathname: opts.path ?? "/", search: opts.search ?? "", replace: (u: string) => (replaced = u) },
+    location: { pathname: opts.path ?? "/", search: opts.search ?? "", hash: opts.hash ?? "", replace: (u: string) => (replaced = u) },
     URLSearchParams,
     get localStorage() {
       if (!store) throw new Error("blocked");
@@ -170,5 +171,31 @@ describe("hydration lateness", () => {
       localStorage: { getItem: (k: string) => store[k] ?? null, setItem: (k: string, v: string) => (store[k] = v) },
     });
     expect(dataset).toMatchObject({ boot: "on", bootAt: "812" });
+  });
+});
+
+describe("section links", () => {
+  it("a link to a section of the recruiter page skips the menu and never redirects", () => {
+    expect(decideBoot(sig({ anchor: "#human" }))).toMatchObject({ show: false, target: "human" });
+    expect(decideBoot(sig({ anchor: "#human", menuSeen: true, storedMode: "shell" }))).toMatchObject({ show: false, target: "human" });
+    expect(decideBoot(sig({ anchor: "#" })).show).toBe(true);
+    expect(decideBoot(sig({ anchor: "#ask", forceBoot: true })).show).toBe(true);
+    expect(decideBoot(sig({ anchor: "#ask", modeParam: "shell" }))).toMatchObject({ show: false, target: "shell" });
+  });
+
+  it("script and decideBoot agree with anchors", () => {
+    for (const storedMode of [null, "human", "shell"] as (Mode | null)[])
+      for (const menuSeen of [false, true])
+        for (const [search, hash] of [["", "#human"], ["", "#"], ["?boot=1", "#ask"], ["?mode=shell", "#human"]]) {
+          const storage: Record<string, string> = {};
+          if (storedMode) storage["kernel:mode"] = storedMode;
+          if (menuSeen) storage["kernel:bootmenu"] = "seen";
+          const q = new URLSearchParams(search);
+          const d = decideBoot(sig({ storedMode, menuSeen, anchor: hash, modeParam: q.get("mode"), forceBoot: q.get("boot") === "1" }));
+          const r = runScript({ search, hash, storage });
+          const label = JSON.stringify({ storedMode, menuSeen, search, hash });
+          expect(r.boot === "on", label).toBe(d.show);
+          expect(r.replaced === "/shell", label).toBe(!d.show && d.target === "shell");
+        }
   });
 });

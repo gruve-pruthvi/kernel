@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MAX_CHARS } from "@/components/query/conversation";
+import { announcementFor, MAX_CHARS } from "@/components/query/conversation";
 import { MessageList } from "@/components/query/MessageList";
 import { useConversation } from "@/components/query/useConversation";
 import { SectionLabel } from "@/components/ui/SectionLabel";
@@ -36,7 +36,7 @@ export function AskInline({ chips, name }: { chips: string[]; name: string }) {
       </h2>
 
       {messages.length > 0 && (
-        <div className="mt-5" aria-live="polite">
+        <div className="mt-5">
           <MessageList messages={messages} />
         </div>
       )}
@@ -53,6 +53,11 @@ export function AskInline({ chips, name }: { chips: string[]; name: string }) {
         </ul>
       )}
 
+      {/* Always mounted, so each finished answer is announced once (not token by token while it streams). */}
+      <p aria-live="polite" className="sr-only">
+        {announcementFor(messages)}
+      </p>
+
       <form
         className="mt-5 flex items-center gap-2 rounded-lg border border-border bg-bg px-3 py-2 focus-within:border-border-strong"
         onSubmit={(e) => {
@@ -65,6 +70,7 @@ export function AskInline({ chips, name }: { chips: string[]; name: string }) {
           maxLength={MAX_CHARS}
           onChange={(e) => setInput(e.target.value)}
           placeholder="e.g. What has been built with agents?"
+          id="ask-input"
           aria-label="Ask about the work"
           className="min-w-0 flex-1 bg-transparent text-sm text-text outline-none placeholder:text-faint"
         />
