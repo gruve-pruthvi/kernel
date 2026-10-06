@@ -1,4 +1,4 @@
-import { buildGraph, resolveFocus } from "../../graph";
+import { buildGraph, neighbours, resolveFocus } from "../../graph";
 import { normalise, resolve } from "../fs";
 import { fail, out, seg, type Command } from "../registry";
 import { nearest } from "../util";
@@ -73,13 +73,30 @@ const graph: Command = {
   name: "graph",
   group: "actions",
   summary: "show the skill graph, optionally focused",
-  usage: "graph [node…]",
-  description: ["Opens the engineering graph in the side pane, focused on systems, capabilities or technologies by id or name."],
-  examples: ["graph", "graph langgraph", "graph atlas rag"],
+  usage: "graph [--depth n] [node…]",
+  description: [
+    "Opens the engineering graph in the side pane, focused on systems, capabilities or technologies by id or name.",
+    "--depth expands the focus by that many hops (1–3).",
+  ],
+  flags: { depth: { value: true, placeholder: "n", describe: "also highlight neighbours up to n hops away (1–3)" } },
+  examples: ["graph", "graph langgraph", "graph --depth 2 atlas"],
   seeAlso: ["open", "which"],
-  run(args, _flags, ctx) {
-    const focus = resolveFocus(buildGraph(ctx.p), args.join(","));
+  run(args, flags, ctx) {
+    const g = buildGraph(ctx.p);
+    let focus = resolveFocus(g, args.join(","));
     if (args.length && focus.length === 0) return fail(`graph: nothing matches "${args.join(" ")}"`);
+    if (flags.depth !== undefined) {
+      const depth = Number(flags.depth);
+      if (![1, 2, 3].includes(depth)) return fail("graph: --depth must be 1, 2 or 3");
+      if (focus.length === 0) return fail("graph: --depth needs a node");
+      const seen = new Set(focus);
+      let frontier = [...focus];
+      for (let i = 0; i < depth; i++) {
+        frontier = frontier.flatMap((id) => [...neighbours(g, id)]).filter((id) => !seen.has(id));
+        frontier.forEach((id) => seen.add(id));
+      }
+      focus = [...seen];
+    }
     return { effects: [{ type: "openView", view: { type: "graph", focus } }] };
   },
 };

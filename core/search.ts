@@ -119,3 +119,5 @@ export function searchPortfolio(p: Portfolio, query: string, limit = 5): SearchR
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);
 }
+
+export const indexSize = (p: Portfolio): number => buildIndex(p).length;

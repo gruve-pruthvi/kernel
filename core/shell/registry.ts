@@ -1,7 +1,7 @@
 import type { Portfolio } from "../schema";
 import type { DirNode, FsNode } from "./fs";
 import type { FlagSpec, Flags } from "./parser";
-import type { Effect, Line, OutputItem, Seg, ShellState, Tone } from "./types";
+import type { Effect, Line, OutputItem, RuntimeEnv, Seg, ShellState, Tone } from "./types";
 
 export interface Ctx {
   p: Portfolio;
@@ -10,6 +10,7 @@ export interface Ctx {
   stdin: string[] | null;
   now: number;
   commands: Command[];
+  env: RuntimeEnv;
 }
 
 export interface CommandResult {

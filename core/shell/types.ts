@@ -49,7 +49,18 @@ export interface ShellState {
   prevCwd: string[];
   history: HistoryEntry[];
   sessionStart: number;
+  stats: { commands: number; simulations: number };
 }
+
+export interface RuntimeEnv {
+  theme: "dark" | "light";
+  motion: "full" | "reduced";
+  recruiter: boolean;
+  ai: "online" | "offline" | "unknown";
+  pane: string | null;
+}
+
+export const DEFAULT_ENV: RuntimeEnv = { theme: "dark", motion: "full", recruiter: false, ai: "unknown", pane: null };
 
 export interface Result {
   output: OutputItem[];

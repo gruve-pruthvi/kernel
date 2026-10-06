@@ -3,10 +3,11 @@ import { actionCommands } from "./actions";
 import { infoCommands } from "./info";
 import { introspectCommands } from "./introspect";
 import { navCommands } from "./nav";
+import { runtimeCommands } from "./runtime";
 import { searchCommands } from "./search";
 import { textCommands } from "./text";
 
-export const COMMANDS: Command[] = [...navCommands, ...textCommands, ...searchCommands, ...infoCommands, ...actionCommands, ...introspectCommands];
+export const COMMANDS: Command[] = [...navCommands, ...textCommands, ...searchCommands, ...infoCommands, ...actionCommands, ...introspectCommands, ...runtimeCommands];
 
 export function getCommand(name: string): Command | undefined {
   const n = name.toLowerCase();

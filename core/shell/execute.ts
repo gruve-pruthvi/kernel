@@ -3,13 +3,13 @@ import { COMMANDS, commandNames, getCommand } from "./commands";
 import { buildFs } from "./fs";
 import { expandHistory, parse, parseFlags } from "./parser";
 import { out, plainText, seg } from "./registry";
-import type { Effect, HistoryEntry, OutputItem, Result, ShellState } from "./types";
+import { DEFAULT_ENV, type Effect, type HistoryEntry, type OutputItem, type Result, type RuntimeEnv, type ShellState } from "./types";
 import { nearest } from "./util";
 
 export const HISTORY_LIMIT = 200;
 
 export function initialState(now: number, history: HistoryEntry[] = []): ShellState {
-  return { cwd: [], prevCwd: [], history: history.slice(-HISTORY_LIMIT), sessionStart: now };
+  return { cwd: [], prevCwd: [], history: history.slice(-HISTORY_LIMIT), sessionStart: now, stats: { commands: 0, simulations: 0 } };
 }
 
 const PROSE_WORD = /^[\p{L}\p{N}'’",.!?()-]+$/u;
@@ -42,7 +42,7 @@ export function execute(
   state: ShellState,
   p: Portfolio,
   now = Date.now(),
-  opts: { maxPipelines?: number } = {},
+  opts: { maxPipelines?: number; env?: RuntimeEnv } = {},
 ): Result {
   const trimmed = input.trim();
   if (!trimmed) return { output: [], effects: [], state, exitCode: 0 };
@@ -55,6 +55,7 @@ export function execute(
   let st: ShellState = {
     ...state,
     history: last === line ? state.history : [...state.history, { command: line, at: now }].slice(-HISTORY_LIMIT),
+    stats: { ...state.stats, commands: state.stats.commands + 1 },
   };
   const output: OutputItem[] = expansion.expanded ? [out(seg(line, "faint"))] : [];
   const effects: Effect[] = [];
@@ -98,7 +99,7 @@ export function execute(
         exitCode = 1;
         break;
       }
-      const res = cmd.run(flags.args, flags.flags, { p, fs, state: st, stdin, now, commands: COMMANDS });
+      const res = cmd.run(flags.args, flags.flags, { p, fs, state: st, stdin, now, commands: COMMANDS, env: opts.env ?? DEFAULT_ENV });
       // Bash runs pipeline stages in subshells: only the final stage may change shell state.
       if (res.state && isLast) st = { ...st, ...res.state };
       exitCode = res.exitCode ?? 0;
