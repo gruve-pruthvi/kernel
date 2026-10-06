@@ -1,4 +1,4 @@
-import type { Metadata, Viewport } from "next";
+import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { Overlays } from "@/components/shell/Overlays";
 import { getIdentity } from "@/core/content";
@@ -14,15 +14,8 @@ export const metadata: Metadata = {
   description: `${identity.role}. ${identity.tagline}`,
 };
 
-export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#0e0f11" },
-    { media: "(prefers-color-scheme: light)", color: "#f6f4ef" },
-  ],
-};
-
-// Runs before paint: restores theme and recruiter mode.
-const themeScript = `(function(){try{var d=document.documentElement,s=localStorage;var t=s.getItem("kernel:theme");if(t)d.dataset.theme=t;if(s.getItem("kernel:recruiter")==="on")d.dataset.recruiter="on";}catch(e){}})();`;
+// Runs before paint: restores theme + recruiter mode and sets the browser chrome colour from the site theme.
+const themeScript = `(function(){try{var d=document.documentElement,s=localStorage;var t=s.getItem("kernel:theme");if(t)d.dataset.theme=t;if(s.getItem("kernel:recruiter")==="on")d.dataset.recruiter="on";var m=document.createElement("meta");m.name="theme-color";m.content=t==="light"?"#f6f4ef":"#0e0f11";document.head.appendChild(m);}catch(e){}})();`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

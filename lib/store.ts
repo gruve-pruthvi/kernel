@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { applyThemeColor } from "./theme-color";
 
 export type KernelState = {
   recruiter: boolean;
@@ -75,6 +76,7 @@ export const kernel = {
     set({ theme });
     write("kernel:theme", theme);
     document.documentElement.dataset.theme = theme;
+    applyThemeColor(theme);
   },
   openQuery(seed?: string) {
     hydrate();

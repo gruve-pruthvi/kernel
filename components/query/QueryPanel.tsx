@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { describeAction, validateAction, type UiAction } from "@/core/actions";
 import { portfolio } from "@/core/content";
 import { SUGGESTED_QUESTIONS, type Source } from "@/core/query";
 import { kernel, useKernel } from "@/lib/store";
 import { useRunAction } from "@/lib/use-run-action";
+import { useMotionAllowed } from "@/lib/use-motion-allowed";
 import type { QueryEvent } from "@/server/query-handler";
 import { Markdown } from "./Markdown";
 import { createLineDecoder } from "./stream";
@@ -30,6 +31,8 @@ export function QueryPanel() {
   const seed = useKernel((s) => s.querySeed);
   const nonce = useKernel((s) => s.queryNonce);
   const runAction = useRunAction();
+  const motionAllowed = useMotionAllowed();
+  const returnFocus = useRef<HTMLElement | null>(null);
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -45,8 +48,15 @@ export function QueryPanel() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [messages]);
 
+  // Dialog focus: move in on open, return to where the visitor was on close.
   useEffect(() => {
-    if (open) window.setTimeout(() => inputRef.current?.focus(), 50);
+    if (open) {
+      returnFocus.current = document.activeElement as HTMLElement | null;
+      window.setTimeout(() => inputRef.current?.focus(), 50);
+    } else if (returnFocus.current) {
+      returnFocus.current.focus?.();
+      returnFocus.current = null;
+    }
   }, [open]);
 
   const updateLast = (fn: (m: Message) => Message) =>
@@ -76,13 +86,17 @@ export function QueryPanel() {
         else if (e.type === "text") updateLast((m) => ({ ...m, content: m.content + e.text }));
         else if (e.type === "action") {
           const action = validateAction(e.action, portfolio);
-          if (!action) return;
+          if (!action) {
+            if (process.env.NODE_ENV !== "production") console.debug("[kernel] dropped action", e.action);
+            return;
+          }
           ranAction = true;
           runAction(action);
           updateLast((m) => ({ ...m, actions: [...(m.actions ?? []), action] }));
         } else if (e.type === "suggestion") {
           const action = validateAction(e.action, portfolio);
           if (action) updateLast((m) => ({ ...m, suggestions: [...(m.suggestions ?? []), action] }));
+          else if (process.env.NODE_ENV !== "production") console.debug("[kernel] dropped suggestion", e.action);
         } else if (e.type === "error") updateLast((m) => ({ ...m, error: e.message }));
       };
 
@@ -126,7 +140,8 @@ export function QueryPanel() {
   }, [open, seed, nonce, submit]);
 
   return (
-    <AnimatePresence>
+    <MotionConfig reducedMotion={motionAllowed ? "never" : "always"}>
+      <AnimatePresence>
       {open && (
         <>
           <motion.div
@@ -141,6 +156,7 @@ export function QueryPanel() {
           <motion.div
             key="query-panel"
             role="dialog"
+            aria-modal="true"
             aria-label="Ask Kernel"
             className="fixed inset-0 z-50 flex flex-col border-border bg-bg shadow-2xl md:inset-y-0 md:left-auto md:right-0 md:w-[460px] md:border-l"
             initial={{ x: 40, opacity: 0 }}
@@ -150,7 +166,7 @@ export function QueryPanel() {
           >
             <div className="flex h-14 shrink-0 items-center gap-3 border-b border-border px-4">
               <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-text">Query</p>
-              {messages.some((m) => m.mode === "local") && (
+              {[...messages].reverse().find((m) => m.role === "assistant")?.mode === "local" && (
                 <span
                   className="rounded border border-dashed border-border-strong px-1.5 py-0.5 font-mono text-[10px] text-faint"
                   title="AI is unavailable — answering from local search"
@@ -276,6 +292,7 @@ export function QueryPanel() {
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+      </AnimatePresence>
+    </MotionConfig>
   );
 }
