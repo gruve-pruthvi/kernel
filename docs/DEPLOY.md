@@ -20,9 +20,11 @@ npm run check
 
 It runs the type check, lint, tests and a production build. **Everything must pass.** If this fails, Vercel's build will fail the same way. If you changed anything, commit it and push it to GitHub.
 
-> **Two GitHub accounts on this machine?** A push that fails with `403` means the wrong account is active. Switch, push, then switch back:
+> **Two GitHub accounts on this machine?** A push that fails with `403` means git used the wrong account. Git reads its login from the macOS Keychain, not from `gh`, so switching `gh` accounts alone doesn't help. Tell git to ask `gh` for the login for this one push:
 > ```bash
-> gh auth switch --user gruve-pruthvi && git push && gh auth switch --user pruthvi-aifabrik
+> gh auth switch --user gruve-pruthvi
+> git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push
+> gh auth switch --user pruthvi-aifabrik
 > ```
 
 ## Step 2: Import the project on Vercel
