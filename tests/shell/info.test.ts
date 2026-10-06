@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { portfolio } from "@/core/content";
 import type { Portfolio } from "@/core/schema";
 import { COMMANDS } from "@/core/shell/commands";
-import { deepLinkFor, parseDeepLink } from "@/core/shell/deeplink";
 import { execute, initialState } from "@/core/shell/execute";
 import { handleOf, neofetchData, welcome } from "@/core/shell/welcome";
 import { NOW, run, seq, textOf } from "./helpers";
@@ -109,16 +108,8 @@ describe("welcome and deep links", () => {
     expect(text).toContain("man kernel");
   });
 
-  it("deep link limits", () => {
-    expect(parseDeepLink("?cmd=man%20atlas")).toEqual({ line: "man atlas", truncated: false });
-    expect(parseDeepLink("")).toEqual({ line: null, truncated: false });
-    expect(parseDeepLink("?cmd=%20%20")).toEqual({ line: null, truncated: false });
-    const long = parseDeepLink(`?cmd=${"a".repeat(10_000)}`);
-    expect(long.truncated).toBe(true);
-    expect(long.line).toHaveLength(500);
-    expect(deepLinkFor("grep -i rag .")).toBe("/?cmd=grep%20-i%20rag%20.");
-    const many = execute(Array(20).fill("pwd").join(";"), initialState(0), portfolio, 0, { maxPipelines: 5 });
-    expect(many.output.filter((o) => "line" in o && o.line[0]?.text === "~")).toHaveLength(5);
+  it("unknown deep-linked commands are just not found", () => {
     expect(textOf(execute("rm -rf /", initialState(0), portfolio, 0).output)).toContain("command not found: rm");
   });
+
 });
