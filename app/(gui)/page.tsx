@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AskInline } from "@/components/front/AskInline";
 import { Experience } from "@/components/front/Experience";
 import { Flagships } from "@/components/front/Flagships";
 import { Hero } from "@/components/front/Hero";
@@ -6,7 +7,7 @@ import { HowIThink } from "@/components/front/HowIThink";
 import { ProofStrip } from "@/components/front/ProofStrip";
 import { Stack } from "@/components/front/Stack";
 import { portfolio } from "@/core/content";
-import { flagships, proofStats, stackGroups, timeline } from "@/core/front";
+import { askChips, flagships, proofStats, stackGroups, timeline } from "@/core/front";
 
 const identity = portfolio.identity;
 
@@ -18,7 +19,7 @@ export default function FrontPage() {
       <Hero identity={identity} />
       <ProofStrip stats={proofStats(portfolio)} />
       <Flagships systems={flagships(portfolio)} p={portfolio} />
-      <div id="ask-slot" />
+      <AskInline chips={askChips(portfolio)} name={identity.name.split(/\s+/)[0]} />
       <Experience entries={timeline(portfolio)} />
       <Stack groups={stackGroups(portfolio)} />
       <HowIThink identity={identity} />
