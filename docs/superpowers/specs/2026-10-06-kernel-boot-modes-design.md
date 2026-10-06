@@ -40,9 +40,9 @@ A first-visit **bootloader** (GRUB-style menu with countdown) is the signature m
 | `/shell` | The Kernel shell (moved from `/`), unchanged behaviour. |
 | `/systems`, `/systems/[slug]`, `/graph`, `/trace`, `/connect` | Unchanged depth pages. |
 | `/human` | Permanent redirect (308) to `/#human`; its content moves into the front door. |
-| `/?cmd=…` | Server redirect to `/shell?cmd=…` (preserves existing deep links). |
+| `/?cmd=…` | `next.config` redirect (`has: [{ type: "query", key: "cmd" }]`) to `/shell?cmd=…`, so `/` stays static. |
 
-`app/(shell)/page.tsx` moves to `app/shell/page.tsx` (or `app/(shell)/shell/page.tsx`); the Recruiter page becomes `app/(gui)/page.tsx` so it shares the GUI layout. Sitemap, robots and share images updated accordingly.
+`app/(shell)/page.tsx` moves to `app/(shell)/shell/page.tsx`; the Recruiter page becomes `app/(gui)/page.tsx` so it shares the GUI layout. Sitemap, robots and share images updated accordingly.
 
 ### 3.2 Mode state
 
