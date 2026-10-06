@@ -224,3 +224,15 @@ export function displayPath(parts: string[], cwd: string[]): string {
 }
 
 export const nodeText = (node: FsNode): string[] => (node.kind === "file" ? node.lines : []);
+
+/** A cwd saved in sessionStorage, if it is still a plain path to a directory; otherwise home. */
+export function parseCwd(raw: string | null, root: DirNode): string[] {
+  if (!raw) return [];
+  try {
+    const parts: unknown = JSON.parse(raw);
+    if (!Array.isArray(parts) || !parts.every((s) => typeof s === "string" && s && s !== "." && s !== ".." && !s.includes("/"))) return [];
+    return isDir(resolve(root, [], parts.join("/"))) ? (parts as string[]) : [];
+  } catch {
+    return [];
+  }
+}

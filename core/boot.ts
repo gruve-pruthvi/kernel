@@ -107,3 +107,5 @@ if(seen&&s==="shell"){l.replace("/shell");return}
 if(seen&&s==="human")return;
 d.dataset.boot="on"}catch(e){}})();`;
 }
+
+export const modeForPath = (pathname: string): Mode => (pathname === "/shell" || pathname.startsWith("/shell/") ? "shell" : "human");

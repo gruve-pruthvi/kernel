@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState, ViewTransition } from "react";
 import { createLineDecoder } from "@/components/query/stream";
@@ -14,12 +13,14 @@ import { autosuggest, commonPrefix, complete, describeCandidates, type MenuItem 
 import { parseDeepLink } from "@/core/shell/deeplink";
 import { execute, HISTORY_LIMIT, initialState } from "@/core/shell/execute";
 import { explain, explainLines } from "@/core/shell/explain";
-import { pathOf } from "@/core/shell/fs";
+import { buildFs, parseCwd, pathOf } from "@/core/shell/fs";
 import { out, seg } from "@/core/shell/registry";
 import { styleLine } from "@/core/shell/style";
 import type { Effect, HistoryEntry, OutputItem, RuntimeEnv, Seg, ShellState, View } from "@/core/shell/types";
 import { bootLines } from "@/core/shell/welcome";
+import { ModeSwitch } from "@/components/shell/ModeSwitch";
 import { track } from "@/lib/analytics";
+import { switchMode } from "@/lib/mode";
 import { kernel, useKernel } from "@/lib/store";
 import { useMotionAllowed } from "@/lib/use-motion-allowed";
 import type { QueryEvent } from "@/server/query-handler";
@@ -30,6 +31,7 @@ import { ViewPane } from "./ViewPane";
 
 const HISTORY_KEY = "kernel:history";
 const BOOT_KEY = "kernel:booted";
+const CWD_KEY = "kernel:cwd";
 const LIST_ID = "kernel-completions";
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 const nextFrame = () => new Promise<number>((r) => requestAnimationFrame(r));
@@ -62,7 +64,17 @@ type Pane = { view: View; activeId: string | null } | null;
 type Search = { query: string; skip: number };
 type Ai = RuntimeEnv["ai"];
 
-export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; edges: GraphEdge[] }; initial: OutputItem[] }) {
+export function Shell({
+  graph,
+  initial,
+  variant = "page",
+  onExit,
+}: {
+  graph: { nodes: PositionedNode[]; edges: GraphEdge[] };
+  initial: OutputItem[];
+  variant?: "page" | "console";
+  onExit?: () => void;
+}) {
   const router = useRouter();
   const motion = useMotionAllowed();
   const theme = useKernel((s) => s.theme);
@@ -96,11 +108,11 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
       theme,
       motion: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "reduced" : "full",
       mode: "shell",
-      surface: "page",
+      surface: variant,
       ai,
       pane: pane?.view.type ?? null,
     };
-  }, [motion, theme, ai, pane]);
+  }, [motion, theme, ai, pane, variant]);
 
   /** Pane open/close/switch animates (view transition); activeId changes during a simulation do not. */
   const showPane = useCallback((next: Pane) => startTransition(() => setPaneState(next)), []);
@@ -305,16 +317,15 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
           setRows([]);
           return;
         case "mode":
-          kernel.setMode(e.mode);
-          router.push(e.mode === "human" ? "/" : "/shell");
+          void switchMode(e.mode, router, motionRef.current);
           return;
         case "exit":
-          kernel.setMode("human");
-          router.push("/");
+          if (onExit) onExit();
+          else void switchMode("human", router, motionRef.current);
           return;
       }
     },
-    [ask, playSimulation, router, showPane],
+    [ask, onExit, playSimulation, router, showPane],
   );
 
   const run = useCallback(
@@ -339,6 +350,11 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
         setCwd(res.state.cwd);
         setHistoryList(res.state.history.map((h) => h.command));
         saveHistory(res.state.history);
+        try {
+          window.sessionStorage.setItem(CWD_KEY, JSON.stringify(res.state.cwd));
+        } catch {
+          /* ignore */
+        }
         await typeOut(res.output);
         for (const effect of res.effects) {
           if (cancel.current.cancelled) break;
@@ -364,15 +380,32 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
   useEffect(() => {
     if (started.current) return;
     started.current = true;
-    stateRef.current = initialState(Date.now(), loadHistory());
-    const restored = stateRef.current.history.map((h) => h.command);
-    const link = parseDeepLink(window.location.search);
-    let firstVisit = false;
+    let savedCwd: string | null = null;
     try {
-      firstVisit = !window.sessionStorage.getItem(BOOT_KEY);
-      window.sessionStorage.setItem(BOOT_KEY, "1");
+      savedCwd = window.sessionStorage.getItem(CWD_KEY);
     } catch {
       /* ignore */
+    }
+    const cwd0 = parseCwd(savedCwd, buildFs(portfolio));
+    stateRef.current = { ...initialState(Date.now(), loadHistory()), cwd: cwd0 };
+    setCwd(cwd0);
+    const restored = stateRef.current.history.map((h) => h.command);
+    const link = parseDeepLink(variant === "console" ? "" : window.location.search);
+    // Boot lines handed over by the bootloader continue the transcript instead of replaying the boot animation.
+    const handoff = variant === "page" ? kernel.takeHandoff() : null;
+    if (handoff) {
+      const handed: Row[] = handoff.map((item) => ({ id: ++idRef.current, kind: "item", item }));
+      setRows((r) => [...handed, ...r]);
+    }
+    if (variant === "page") delete document.documentElement.dataset.boot; // the bootloader keeps the page covered until the shell is up
+    let firstVisit = false;
+    if (variant === "page") {
+      try {
+        firstVisit = !handoff && !window.sessionStorage.getItem(BOOT_KEY);
+        window.sessionStorage.setItem(BOOT_KEY, "1");
+      } catch {
+        /* ignore */
+      }
     }
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     fetch("/api/status")
@@ -403,7 +436,7 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
       for (const command of link.commands) await run(command);
       inputRef.current?.focus({ preventScroll: true });
     })();
-  }, [add, run]);
+  }, [add, run, variant]);
 
   // ---------- input ----------
 
@@ -586,15 +619,22 @@ export function Shell({ graph, initial }: { graph: { nodes: PositionedNode[]; ed
   };
 
   return (
-    <div className="fixed inset-0 z-30 flex flex-col bg-bg font-mono text-[13px] leading-[1.65] text-text">
+    <div className={`${variant === "page" ? "fixed inset-0 z-30" : "h-full"} flex flex-col bg-bg font-mono text-[13px] leading-[1.65] text-text`}>
       <div className="flex h-8 shrink-0 items-center gap-2 border-b border-border px-3 text-[11px] text-faint">
         <span className="size-2.5 rounded-full bg-[var(--k-model)]" aria-hidden="true" />
         <span className="size-2.5 rounded-full bg-[var(--k-queue)]" aria-hidden="true" />
         <span className="size-2.5 rounded-full bg-[var(--k-store)]" aria-hidden="true" />
         <span className="ml-3 truncate">kernel — {pathOf(cwd)}</span>
-        <Link href="/systems" className="ml-auto hover:text-text">
-          gui ↗
-        </Link>
+        {variant === "page" ? (
+          <ModeSwitch className="ml-auto" />
+        ) : (
+          <>
+            <span className="ml-auto hidden sm:inline">esc or ` to close</span>
+            <button type="button" onClick={() => router.push("/shell")} className="hover:text-text" aria-label="Open the full shell">
+              ⤢
+            </button>
+          </>
+        )}
         <button type="button" onClick={kernel.toggleTheme} className="hover:text-text" aria-label="Toggle theme">
           ◐
         </button>

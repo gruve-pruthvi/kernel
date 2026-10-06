@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Kbd } from "@/components/ui/Kbd";
 import { kernel } from "@/lib/store";
+import { ModeSwitch } from "./ModeSwitch";
 import { ThemeToggle } from "./ThemeToggle";
 
 const LINKS = [
@@ -51,13 +52,7 @@ export function Header() {
           >
             Ask <Kbd>/</Kbd>
           </button>
-          <Link
-            href="/shell"
-            aria-label="Open the Kernel shell (⌘K)"
-            className="hidden items-center gap-1.5 rounded-md px-2 py-1.5 font-mono text-xs text-muted transition hover:bg-surface-2 hover:text-text sm:inline-flex"
-          >
-            &gt;_ shell <Kbd>⌘K</Kbd>
-          </Link>
+          <ModeSwitch className="hidden sm:inline-flex" />
           <ThemeToggle />
           <button
             type="button"
@@ -83,10 +78,8 @@ export function Header() {
               {l.label}
             </Link>
           ))}
-          <div className="mt-2 flex gap-2 border-t border-border pt-3">
-            <Link href="/shell" className="font-mono text-xs text-muted">
-              Shell
-            </Link>
+          <div className="mt-2 border-t border-border pt-3">
+            <ModeSwitch />
           </div>
         </nav>
       )}
