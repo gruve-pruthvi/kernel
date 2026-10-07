@@ -1,4 +1,5 @@
 import type { Portfolio } from "../schema";
+import { buildFs, resolve } from "./fs";
 import { out, seg } from "./registry";
 import type { Effect, OutputItem } from "./types";
 
@@ -86,3 +87,43 @@ export const tourOffer = (): OutputItem =>
 
 export const tourDoneLine = (): OutputItem =>
   out(seg("✓ tour done", "ok"), seg(" — the bar above the prompt always shows what to try next", "faint"));
+
+export interface HintContext {
+  cwd: string[];
+  last?: StepEvent;
+  /** System slugs named by the last AI answer's sources. */
+  sources?: string[];
+}
+
+const MAX_HINTS = 3;
+const ASK_HINT = "ask what have you built?";
+
+/** 1–3 next commands for where the visitor is and what they just did. Every one runs as written. */
+export function hints(ctx: HintContext, p: Portfolio): string[] {
+  const fs = buildFs(p);
+  const exists = (path: string) => resolve(fs, ctx.cwd, path) !== undefined;
+  const system = (slug: string | undefined) => p.systems.find((s) => s.slug === slug);
+  const take = (list: (string | false | undefined)[]) => list.filter((x): x is string => Boolean(x)).slice(0, MAX_HINTS);
+  const fallback = () =>
+    ctx.cwd.length === 0
+      ? take(["ls systems", exists("about.md") && "cat about.md", ASK_HINT])
+      : take(["ls ~/systems", exists("~/about.md") && "cat ~/about.md", ASK_HINT]);
+  const effects = ctx.last?.exitCode === 0 ? ctx.last.effects : [];
+
+  let list: string[] = [];
+  const sim = effects.find((e): e is Extract<Effect, { type: "simulate" }> => e.type === "simulate");
+  if (effects.some((e) => e.type === "ask")) {
+    list = take([...new Set(ctx.sources ?? [])].filter((slug) => system(slug)).slice(0, 2).map((slug) => `open ${slug}`));
+  } else if (sim && system(sim.slug)) {
+    const here = ctx.cwd[0] === "systems" && ctx.cwd[1] === sim.slug;
+    const decisions = here ? "decisions.md" : `~/systems/${sim.slug}/decisions.md`;
+    const other = p.systems.find((s) => s.slug !== sim.slug)?.slug;
+    list = take([exists(decisions) && `cat ${decisions}`, other && `diff ${sim.slug} ${other}`]);
+  } else if (ctx.cwd[0] === "systems" && ctx.cwd.length >= 2) {
+    const s = system(ctx.cwd[1]);
+    if (s) list = take([exists("README.md") && "cat README.md", s.simulation && `run ${s.slug}`, "cd .."]);
+  } else if (ctx.cwd[0] === "systems") {
+    list = take(p.systems.slice(0, 2).map((s) => `cd ${s.slug}`));
+  }
+  return list.length ? list : fallback();
+}
