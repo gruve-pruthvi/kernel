@@ -39,11 +39,13 @@ const hasDemo = (p: Portfolio, slug: string) => Boolean(p.systems.find((s) => s.
 function stepDone(step: number, ev: StepEvent, p: Portfolio): boolean {
   if (ev.exitCode !== 0) return false;
   const withSystems = p.systems.length > 0;
+  // Folder rules count only for `cd`: the visitor moved there, rather than already standing there.
+  const moved = nameOf(ev.command) === "cd";
   switch (step) {
     case 0:
-      return ["ls", "tree"].includes(nameOf(ev.command)) || (withSystems && ev.cwd[0] === "systems");
+      return ["ls", "tree"].includes(nameOf(ev.command)) || (moved && withSystems && ev.cwd[0] === "systems");
     case 1:
-      return withSystems ? inSystem(ev.cwd) : ev.cwd[0] === "skills";
+      return moved && (withSystems ? inSystem(ev.cwd) : ev.cwd[0] === "skills");
     case 2:
       return ev.effects.some((e) => e.type === "simulate" || e.type === "ask");
     default:

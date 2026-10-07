@@ -69,6 +69,16 @@ describe("advanceTour", () => {
     expect(advanceTour(0, start, portfolio)).toBe(0);
   });
 
+  it("folder rules count only when the visitor moved there with cd", () => {
+    const inside = ["systems", first];
+    expect(advanceTour(0, ev("pwd", inside), portfolio)).toBe(0);
+    expect(advanceTour(0, ev("help", ["systems"]), portfolio)).toBe(0);
+    expect(advanceTour(1, ev("pwd", inside), portfolio)).toBe(1);
+    expect(advanceTour(0, ev("ls ~/systems", inside), portfolio)).toBe(1);
+    expect(advanceTour(1, ev(`cd ~/systems/${first}`, inside), portfolio)).toBe(2);
+    expect(advanceTour(0, ev("cd ..", ["systems"]), portfolio)).toBe(1);
+  });
+
   it("never goes backwards and stays finished", () => {
     expect(advanceTour(2, ev("ls"), portfolio)).toBe(2);
     expect(advanceTour(TOUR_LENGTH, ev("ls"), portfolio)).toBe(TOUR_LENGTH);

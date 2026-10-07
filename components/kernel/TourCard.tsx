@@ -24,7 +24,7 @@ export function TourCard({
       <div className="flex items-center gap-3 text-[11px] text-faint">
         <span className="text-accent">{`tour ${step + 1}/${total}`}</span>
         <span className="h-1 flex-1 overflow-hidden rounded bg-surface-2" aria-hidden="true">
-          <span className="block h-full bg-accent transition-[width] duration-300" style={{ width: `${Math.round((step / total) * 100)}%` }} />
+          <span className="block h-full bg-accent transition-[width] duration-300" style={{ width: `${Math.round(((step + 1) / total) * 100)}%` }} />
         </span>
         <button type="button" onPointerDown={keepFocus} onClick={onSkip} className="hover:text-text" aria-label="Skip the tour">
           ✕

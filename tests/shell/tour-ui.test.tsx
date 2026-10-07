@@ -12,6 +12,13 @@ describe("TourCard", () => {
     expect(html).toContain('aria-label="Skip the tour"');
     expect(html).toContain('aria-live="polite"');
   });
+
+  it("the progress bar shows the current step, not only finished ones", () => {
+    const at = (step: number) => renderToString(<TourCard step={step} total={3} text="x" command="ls" disabled={false} onRun={() => {}} onSkip={() => {}} />);
+    expect(at(0)).toContain("width:33%");
+    expect(at(1)).toContain("width:67%");
+    expect(at(2)).toContain("width:100%");
+  });
 });
 
 describe("HintBar", () => {

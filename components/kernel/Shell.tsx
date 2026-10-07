@@ -449,12 +449,17 @@ export function Shell({
     cancel.current.abort?.abort();
   };
 
-  /** Tour and hint clicks: type the command into the prompt (≤0.3 s, instant with reduced motion), then run it. */
+  /** Tour and hint clicks: type the command into the prompt (≤0.3 s, instant with reduced motion), run it, then give back any draft. */
   const typeAndRun = useCallback(
     async (command: string) => {
       if (busyRef.current || typingRef.current) return;
       typingRef.current = true;
       typingAbort.current = false;
+      const draft = inputRef.current?.value ?? "";
+      const restoreDraft = () => {
+        setInput(draft);
+        setCaretAt(draft.length);
+      };
       let finished = false;
       try {
         finished = await typeIn(command, {
@@ -469,12 +474,9 @@ export function Shell({
       } finally {
         typingRef.current = false;
       }
-      if (!finished) {
-        setInput("");
-        setCaret(0);
-        return;
-      }
+      if (!finished) return restoreDraft();
       await run(command);
+      if (draft) restoreDraft();
     },
     [run],
   );
