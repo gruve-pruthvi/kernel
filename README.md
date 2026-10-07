@@ -59,9 +59,10 @@ There are several ways to switch modes later:
 | `run atlas` | Watch a simulated request go through a system |
 | `git log`, `diff atlas relay`, `graph atlas` | Look at history, compare systems, see skill links |
 | `ask <question>` (or just type the question) | Ask the AI |
+| `tour` | A 20-second guided tour (offered on your first visit) |
 | `man kernel`, `help` | See every command |
 
-Tab autocompletes, ↑/↓ scrolls through history, and Ctrl+L clears the screen.
+Tab autocompletes, ↑/↓ scrolls through history, and Ctrl+L clears the screen. The bar above the prompt always suggests what to try next.
 
 ## Put in your own content
 

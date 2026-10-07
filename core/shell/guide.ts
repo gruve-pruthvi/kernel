@@ -53,6 +53,8 @@ function stepDone(step: number, ev: StepEvent, p: Portfolio): boolean {
 
 /** The step after this event. Keeps going while later steps are also satisfied; never goes backwards. */
 export function advanceTour(step: number, ev: StepEvent, p: Portfolio): number {
+  // `tour` itself (start or skip) is never progress, even when the visitor already stands inside a project.
+  if (ev.effects.some((e) => e.type === "tour")) return step;
   let next = step;
   while (next < TOUR_LENGTH && stepDone(next, ev, p)) next++;
   return next;

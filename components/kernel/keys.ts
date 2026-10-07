@@ -35,11 +35,12 @@ export function consoleKeyAction(k: {
   return k.editable ? null : "open";
 }
 
-/** Escape in the shell closes the innermost layer; in the drop-down console the last Escape closes the console. */
-export function escapeAction(s: { menu: boolean; search: boolean; pane: boolean; console: boolean }): "menu" | "search" | "pane" | "exit" | "none" {
+/** Escape in the shell closes the innermost layer (menu, search, pane, then the tour); in the drop-down console the last Escape closes the console. */
+export function escapeAction(s: { menu: boolean; search: boolean; pane: boolean; tour: boolean; console: boolean }): "menu" | "search" | "pane" | "tour" | "exit" | "none" {
   if (s.menu) return "menu";
   if (s.search) return "search";
   if (s.pane) return "pane";
+  if (s.tour) return "tour";
   return s.console ? "exit" : "none";
 }
 

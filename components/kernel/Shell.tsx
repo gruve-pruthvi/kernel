@@ -11,9 +11,22 @@ import type { PositionedNode } from "@/core/graph-layout";
 import { commandName } from "@/core/shell/analytics";
 import { COMMANDS } from "@/core/shell/commands";
 import { autosuggest, commonPrefix, complete, describeCandidates, type MenuItem } from "@/core/shell/complete";
-import { parseDeepLink } from "@/core/shell/deeplink";
+import { deepLinkFor, parseDeepLink } from "@/core/shell/deeplink";
 import { execute, HISTORY_LIMIT, initialState } from "@/core/shell/execute";
 import { explain, explainLines } from "@/core/shell/explain";
+import {
+  advanceTour,
+  hints as hintsFor,
+  readTourStatus,
+  shouldOfferTour,
+  TOUR_KEY,
+  TOUR_LENGTH,
+  tourDoneLine,
+  tourOffer,
+  tourStep,
+  type StepEvent,
+  type TourStatus,
+} from "@/core/shell/guide";
 import { buildFs, parseCwd, pathOf } from "@/core/shell/fs";
 import { out, seg } from "@/core/shell/registry";
 import { styleLine } from "@/core/shell/style";
@@ -26,8 +39,10 @@ import { kernel, useKernel } from "@/lib/store";
 import { useMotionAllowed } from "@/lib/use-motion-allowed";
 import type { QueryEvent } from "@/server/query-handler";
 import { blockWhileBusy, consoleModeAction, escapeAction, tabDecision } from "./keys";
+import { HintBar } from "./HintBar";
 import { comboboxProps, createTypewriter, mobileKeys, optionId, splitRows, type MobileKeyId } from "./policy";
 import { PromptText, Transcript, type Row } from "./Transcript";
+import { TourCard } from "./TourCard";
 import { ViewPane } from "./ViewPane";
 
 const HISTORY_KEY = "kernel:history";
@@ -103,6 +118,29 @@ export function Shell({
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const started = useRef(false);
+  // Guided tour (null = not running) and the context the hint bar reads.
+  const [tour, setTourState] = useState<number | null>(null);
+  const tourRef = useRef<number | null>(null);
+  const [hintCtx, setHintCtx] = useState<{ last?: StepEvent; sources?: string[] }>({});
+  const sourcesRef = useRef<string[]>([]);
+  const typingRef = useRef(false);
+
+  const setTour = useCallback((step: number | null) => {
+    tourRef.current = step;
+    setTourState(step);
+  }, []);
+
+  const endTour = useCallback(
+    (status: Exclude<TourStatus, null>) => {
+      setTour(null);
+      try {
+        window.localStorage.setItem(TOUR_KEY, status);
+      } catch {
+        /* storage blocked: the offer just shows again next visit */
+      }
+    },
+    [setTour],
+  );
 
   useEffect(() => {
     motionRef.current = motion;
@@ -228,6 +266,7 @@ export function Shell({
       session.abort = abort;
       const [rowId] = add([out(seg("▸ ", "accent"), seg("thinking…", "faint"))], true);
       let sources: string[] = [];
+      sourcesRef.current = [];
       // Typewriter: steady reveal that catches up with bursts; stop() guarantees no later writes.
       const tw = createTypewriter({
         write: (shown) => replace(rowId, answerLine(shown), true),
@@ -263,6 +302,7 @@ export function Shell({
           if (e.type === "meta") {
             setAi(e.mode === "ai" ? "online" : "offline");
             sources = e.sources.slice(0, 4).map((s) => s.title);
+            sourcesRef.current = e.sources.filter((s) => s.kind === "system").map((s) => s.id);
           } else if (e.type === "text") tw.push(e.text);
           else if (e.type === "action" || e.type === "suggestion") applyAction(e.action);
           else if (e.type === "error") add([out(seg(e.message, "error"))]);
@@ -325,13 +365,26 @@ export function Shell({
           if (consoleModeAction(e.mode, pathname, variant) === "close") onExit?.();
           else void switchMode(e.mode, router, motionRef.current);
           return;
+        case "tour":
+          if (e.action === "skip") {
+            endTour("skipped");
+            add([out(seg("tour skipped", "faint"), seg(" — type ", "faint"), seg("tour", "accent", { run: "tour" }), seg(" to start it again", "faint"))]);
+            return;
+          }
+          if (variant === "console") {
+            add([out(seg("the tour runs in the full shell — opening /shell", "faint"))]);
+            router.push(deepLinkFor("tour"));
+            return;
+          }
+          setTour(0);
+          return;
         case "exit":
           if (onExit) onExit();
           else void switchMode("human", router, motionRef.current);
           return;
       }
     },
-    [ask, onExit, pathname, playSimulation, router, showPane, variant],
+    [add, ask, endTour, onExit, pathname, playSimulation, router, setTour, showPane, variant],
   );
 
   const run = useCallback(
@@ -351,7 +404,9 @@ export function Shell({
       const name = commandName(raw);
       if (name) track("command", { command: name });
       try {
-        const res = execute(raw, stateRef.current, portfolio, Date.now(), { env: envRef.current });
+        // While the tour is up, a bare `skip` means `tour skip`.
+        const line = tourRef.current !== null && raw.trim().toLowerCase() === "skip" ? "tour skip" : raw;
+        const res = execute(line, stateRef.current, portfolio, Date.now(), { env: envRef.current });
         stateRef.current = res.state;
         setCwd(res.state.cwd);
         setHistoryList(res.state.history.map((h) => h.command));
@@ -366,13 +421,24 @@ export function Shell({
           if (cancel.current.cancelled) break;
           await perform(effect);
         }
+        if (!cancel.current.cancelled) {
+          const ev: StepEvent = { command: line, cwd: res.state.cwd, effects: res.effects, exitCode: res.exitCode };
+          setHintCtx({ last: ev, sources: res.effects.some((x) => x.type === "ask") ? sourcesRef.current : undefined });
+          if (tourRef.current !== null) {
+            const next = advanceTour(tourRef.current, ev, portfolio);
+            if (next >= TOUR_LENGTH) {
+              endTour("done");
+              add([tourDoneLine()]);
+            } else if (next !== tourRef.current) setTour(next);
+          }
+        }
       } finally {
         busyRef.current = false;
         setBusy(false);
         requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
       }
     },
-    [perform, typeOut],
+    [add, endTour, perform, setTour, typeOut],
   );
 
   const cancelRunning = () => {
@@ -380,6 +446,28 @@ export function Shell({
     cancel.current.onCancel?.();
     cancel.current.abort?.abort();
   };
+
+  /** Tour and hint clicks: type the command into the prompt (≤0.3 s, instant with reduced motion), then run it. */
+  const typeAndRun = useCallback(
+    async (command: string) => {
+      if (busyRef.current || typingRef.current) return;
+      typingRef.current = true;
+      try {
+        if (motionRef.current) {
+          const per = Math.min(25, 300 / Math.max(1, command.length));
+          for (let i = 1; i <= command.length; i++) {
+            setInput(command.slice(0, i));
+            setCaret(i);
+            await sleep(per);
+          }
+        }
+      } finally {
+        typingRef.current = false;
+      }
+      await run(command);
+    },
+    [run],
+  );
 
   // ---------- boot, AI status, deep links ----------
 
@@ -438,6 +526,13 @@ export function Shell({
         busyRef.current = false;
         setBusy(false);
       }
+      let tourStatus: TourStatus = null;
+      try {
+        tourStatus = readTourStatus(window.localStorage.getItem(TOUR_KEY));
+      } catch {
+        /* storage blocked: treat as never seen */
+      }
+      if (shouldOfferTour({ status: tourStatus, variant, deepLinked: link.commands.length > 0 })) add([tourOffer()]);
       for (const notice of link.notices) add([out(seg(notice, "faint"))]);
       for (const command of link.commands) await run(command);
       inputRef.current?.focus({ preventScroll: true });
@@ -530,10 +625,11 @@ export function Shell({
     }
     if (k === "Escape") {
       e.nativeEvent.stopImmediatePropagation();
-      const layer = escapeAction({ menu: Boolean(menu), search: Boolean(search), pane: Boolean(pane), console: variant === "console" });
+      const layer = escapeAction({ menu: Boolean(menu), search: Boolean(search), pane: Boolean(pane), tour: tourRef.current !== null, console: variant === "console" });
       if (layer === "menu") setMenu(null);
       else if (layer === "search") setSearch(null);
       else if (layer === "pane") showPane(null);
+      else if (layer === "tour") endTour("skipped");
       else if (layer === "exit") onExit?.();
       return;
     }
@@ -616,6 +712,8 @@ export function Shell({
   const syncCaret = () => setCaret(inputRef.current?.selectionStart ?? input.length);
   const runFromClick = (command: string) => void run(command);
   const { settled, live } = splitRows(rows);
+  const tourNow = tour === null ? null : tourStep(tour, cwd, portfolio);
+  const hintList = useMemo(() => hintsFor({ cwd, ...hintCtx }, portfolio), [cwd, hintCtx]);
   const keyActions: Record<MobileKeyId, () => void> = {
     tab: () => completeNow(),
     up: historyPrev,
@@ -663,6 +761,20 @@ export function Shell({
             <div aria-hidden="true">
               <Transcript rows={live} onRun={runFromClick} />
             </div>
+          )}
+          {tourNow && tour !== null && (
+            <TourCard
+              step={tour}
+              total={TOUR_LENGTH}
+              text={tourNow.text}
+              command={tourNow.command}
+              disabled={busy}
+              onRun={(c) => void typeAndRun(c)}
+              onSkip={() => {
+                endTour("skipped");
+                inputRef.current?.focus({ preventScroll: true });
+              }}
+            />
           )}
           <label className="relative block whitespace-pre-wrap break-all">
             <span className={busy ? "invisible" : undefined}>
@@ -742,6 +854,7 @@ export function Shell({
         )}
       </div>
 
+      {tour === null && <HintBar hints={hintList} hidden={busy || Boolean(menu)} onRun={(c) => void typeAndRun(c)} />}
       <div className="hidden shrink-0 gap-1.5 overflow-x-auto border-t border-border px-2 py-1.5 [@media(pointer:coarse)]:flex" aria-label="Shell keys">
         {mobileKeys(busy).map((key) => (
           <button

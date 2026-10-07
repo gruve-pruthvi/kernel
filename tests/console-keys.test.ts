@@ -33,12 +33,18 @@ describe("consoleKeyAction", () => {
 
 describe("escapeAction", () => {
   it("peels one layer at a time, and finally closes the console", () => {
-    const base = { menu: false, search: false, pane: false, console: true };
-    expect(escapeAction({ ...base, menu: true, search: true, pane: true })).toBe("menu");
-    expect(escapeAction({ ...base, search: true, pane: true })).toBe("search");
-    expect(escapeAction({ ...base, pane: true })).toBe("pane");
+    const base = { menu: false, search: false, pane: false, tour: false, console: true };
+    expect(escapeAction({ ...base, menu: true, search: true, pane: true, tour: true })).toBe("menu");
+    expect(escapeAction({ ...base, search: true, pane: true, tour: true })).toBe("search");
+    expect(escapeAction({ ...base, pane: true, tour: true })).toBe("pane");
     expect(escapeAction(base)).toBe("exit");
     expect(escapeAction({ ...base, console: false })).toBe("none");
+  });
+
+  it("ends the tour after closing any open pane", () => {
+    const page = { menu: false, search: false, pane: false, tour: true, console: false };
+    expect(escapeAction({ ...page, pane: true })).toBe("pane");
+    expect(escapeAction(page)).toBe("tour");
   });
 });
 

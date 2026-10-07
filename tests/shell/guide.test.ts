@@ -64,6 +64,11 @@ describe("advanceTour", () => {
     expect(advanceTour(1, ev("cd nope", ["systems"], { exitCode: 1 }), portfolio)).toBe(1);
   });
 
+  it("the command that starts the tour never advances it, wherever the visitor is", () => {
+    const start = ev("tour", ["systems", first], { effects: [{ type: "tour", action: "start" }] });
+    expect(advanceTour(0, start, portfolio)).toBe(0);
+  });
+
   it("never goes backwards and stays finished", () => {
     expect(advanceTour(2, ev("ls"), portfolio)).toBe(2);
     expect(advanceTour(TOUR_LENGTH, ev("ls"), portfolio)).toBe(TOUR_LENGTH);
