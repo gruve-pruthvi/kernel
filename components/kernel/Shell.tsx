@@ -38,9 +38,9 @@ import { switchMode } from "@/lib/mode";
 import { kernel, useKernel } from "@/lib/store";
 import { useMotionAllowed } from "@/lib/use-motion-allowed";
 import type { QueryEvent } from "@/server/query-handler";
-import { blockWhileBusy, consoleModeAction, escapeAction, tabDecision } from "./keys";
+import { blockWhileBusy, consoleModeAction, escapeAction, tabDecision, typingKeyAction } from "./keys";
 import { HintBar } from "./HintBar";
-import { comboboxProps, createTypewriter, mobileKeys, optionId, splitRows, type MobileKeyId } from "./policy";
+import { comboboxProps, createTypewriter, mobileKeys, optionId, splitRows, typeIn, type MobileKeyId } from "./policy";
 import { PromptText, Transcript, type Row } from "./Transcript";
 import { TourCard } from "./TourCard";
 import { ViewPane } from "./ViewPane";
@@ -124,6 +124,7 @@ export function Shell({
   const [hintCtx, setHintCtx] = useState<{ last?: StepEvent; sources?: string[] }>({});
   const sourcesRef = useRef<string[]>([]);
   const typingRef = useRef(false);
+  const typingAbort = useRef(false);
 
   const setTour = useCallback((step: number | null) => {
     tourRef.current = step;
@@ -442,6 +443,7 @@ export function Shell({
   );
 
   const cancelRunning = () => {
+    typingAbort.current = true;
     cancel.current.cancelled = true;
     cancel.current.onCancel?.();
     cancel.current.abort?.abort();
@@ -452,17 +454,25 @@ export function Shell({
     async (command: string) => {
       if (busyRef.current || typingRef.current) return;
       typingRef.current = true;
+      typingAbort.current = false;
+      let finished = false;
       try {
-        if (motionRef.current) {
-          const per = Math.min(25, 300 / Math.max(1, command.length));
-          for (let i = 1; i <= command.length; i++) {
-            setInput(command.slice(0, i));
-            setCaret(i);
-            await sleep(per);
-          }
-        }
+        finished = await typeIn(command, {
+          write: (text) => {
+            setInput(text);
+            setCaret(text.length);
+          },
+          sleep,
+          aborted: () => typingAbort.current,
+          instant: !motionRef.current,
+        });
       } finally {
         typingRef.current = false;
+      }
+      if (!finished) {
+        setInput("");
+        setCaret(0);
+        return;
       }
       await run(command);
     },
@@ -608,6 +618,11 @@ export function Shell({
       e.nativeEvent.stopImmediatePropagation();
       return;
     }
+    if (typingRef.current) {
+      e.preventDefault();
+      if (typingKeyAction({ key: k, ctrl: e.ctrlKey, meta: e.metaKey, alt: e.altKey }) === "abort") typingAbort.current = true;
+      return;
+    }
     if (ctrl && lower === "c") {
       e.preventDefault();
       if (busyRef.current) cancelRunning();
@@ -710,7 +725,9 @@ export function Shell({
   };
 
   const syncCaret = () => setCaret(inputRef.current?.selectionStart ?? input.length);
-  const runFromClick = (command: string) => void run(command);
+  const runFromClick = (command: string) => {
+    if (!typingRef.current) void run(command);
+  };
   const { settled, live } = splitRows(rows);
   const tourNow = tour === null ? null : tourStep(tour, cwd, portfolio);
   const hintList = useMemo(() => hintsFor({ cwd, ...hintCtx }, portfolio), [cwd, hintCtx]);
@@ -863,6 +880,7 @@ export function Shell({
             disabled={key.disabled}
             onPointerDown={(e) => e.preventDefault()}
             onClick={() => {
+              if (typingRef.current && key.id !== "cancel") return;
               keyActions[key.id]();
               inputRef.current?.focus({ preventScroll: true });
             }}

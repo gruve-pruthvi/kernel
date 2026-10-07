@@ -97,3 +97,25 @@ export function createTypewriter(opts: {
     },
   };
 }
+
+/**
+ * Types a clicked suggestion into the prompt, letter by letter within `capMs` (instant with reduced motion).
+ * Stops as soon as `aborted()` turns true (Ctrl+C). Returns whether the command was fully typed.
+ */
+export async function typeIn(
+  command: string,
+  opts: { write: (text: string) => void; sleep: (ms: number) => Promise<void>; aborted: () => boolean; instant: boolean; capMs?: number },
+): Promise<boolean> {
+  if (opts.instant) {
+    if (opts.aborted()) return false;
+    opts.write(command);
+    return true;
+  }
+  const per = Math.min(25, (opts.capMs ?? 300) / Math.max(1, command.length));
+  for (let i = 1; i <= command.length; i++) {
+    if (opts.aborted()) return false;
+    opts.write(command.slice(0, i));
+    await opts.sleep(per);
+  }
+  return !opts.aborted();
+}

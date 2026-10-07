@@ -44,6 +44,11 @@ export function escapeAction(s: { menu: boolean; search: boolean; pane: boolean;
   return s.console ? "exit" : "none";
 }
 
+/** While a suggestion types itself in: Ctrl+C aborts it; every other key is swallowed so Enter can't run the half-typed text. */
+export function typingKeyAction(k: { key: string; ctrl: boolean; meta: boolean; alt: boolean }): "abort" | "swallow" {
+  return k.ctrl && !k.meta && !k.alt && k.key.toLowerCase() === "c" ? "abort" : "swallow";
+}
+
 /** `human` typed in the console while already on the recruiter page just closes the console. */
 export function consoleModeAction(mode: Mode, pathname: string, variant: "page" | "console"): "close" | "switch" {
   return variant === "console" && mode === "human" && pathname === "/" ? "close" : "switch";
