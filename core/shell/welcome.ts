@@ -34,21 +34,12 @@ export function neofetchData(p: Portfolio): { handle: string; rows: NeofetchRow[
 }
 
 export function welcome(p: Portfolio): OutputItem[] {
-  const runnable = p.systems.find((s) => s.simulation) ?? p.systems[0];
-  const hints = [
-    "ls",
-    ...(runnable ? [`cd systems/${runnable.slug}`, `run ${runnable.slug}`] : []),
-    ...(p.capabilities[0] ? [`grep -i ${p.capabilities[0].id} .`] : []),
-    "man kernel",
-    "help",
-  ];
   return [
     { block: { kind: "neofetch" } },
     blank(),
-    out(seg("try  ", "faint"), ...hints.flatMap((h, i) => [...(i ? [seg("  ·  ", "faint")] : []), seg(h, "accent", { run: h })])),
-    out(seg("     or just ask: ", "faint"), seg('"what has been built with agents?"', "text", { run: "what has been built with agents?" })),
+    out(seg("just ask:  ", "faint"), seg('"what has been built with agents?"', "text", { run: "what has been built with agents?" })),
     out(
-      seg("     systems: ", "faint"),
+      seg("systems:   ", "faint"),
       ...p.systems.flatMap((s, i) => [...(i ? [seg("  ")] : []), seg(s.slug, "dir", { run: `cd ~/systems/${s.slug}` })]),
     ),
     blank(),

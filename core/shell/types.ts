@@ -40,7 +40,8 @@ export type Effect =
   | { type: "ask"; question: string }
   | { type: "clear" }
   | { type: "mode"; mode: Mode }
-  | { type: "exit" };
+  | { type: "exit" }
+  | { type: "tour"; action: "start" | "skip" };
 
 export interface HistoryEntry {
   command: string;

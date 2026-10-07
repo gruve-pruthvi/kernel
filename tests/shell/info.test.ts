@@ -100,12 +100,12 @@ describe("whoami / id / resume / export", () => {
 });
 
 describe("welcome and deep links", () => {
-  it("welcome shows neofetch, hints and system names", () => {
+  it("welcome shows neofetch, the ask prompt and system names", () => {
     const items = welcome(portfolio);
     expect(items[0]).toEqual({ block: { kind: "neofetch" } });
     const text = textOf(items);
     for (const s of portfolio.systems) expect(text).toContain(s.slug);
-    expect(text).toContain("man kernel");
+    expect(text).toContain("just ask:");
   });
 
   it("unknown deep-linked commands are just not found", () => {

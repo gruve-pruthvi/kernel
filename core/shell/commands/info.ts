@@ -316,4 +316,23 @@ const ask: Command = {
   },
 };
 
-export const infoCommands = [man, help, history, whoami, id, resume, exportCmd, ask];
+const tour: Command = {
+  name: "tour",
+  group: "info",
+  summary: "a 20-second guided tour of the shell",
+  usage: "tour [skip]",
+  description: [
+    "Walks you through the three moves that matter: look around, step into a project, then run it or ask a question.",
+    "Each step finishes when you do it — type the command or click it. `tour skip` (or Esc) ends the tour; `tour` starts it again.",
+  ],
+  examples: ["tour", "tour skip"],
+  seeAlso: ["help", "man"],
+  run(args) {
+    const a = args.map((x) => x.toLowerCase());
+    if (a.length === 0) return { effects: [{ type: "tour", action: "start" }] };
+    if (a.length === 1 && a[0] === "skip") return { effects: [{ type: "tour", action: "skip" }] };
+    return fail(`tour: unexpected "${args.join(" ")}"`, `usage: ${this.usage}`);
+  },
+};
+
+export const infoCommands = [man, help, tour, history, whoami, id, resume, exportCmd, ask];
