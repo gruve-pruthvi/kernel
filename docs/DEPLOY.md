@@ -103,7 +103,7 @@ Pushes to other branches get their own **preview** address, which is handy for c
 
 ## Other option: run it on your own server
 
-The site runs on any machine with Node.js 20 or newer:
+The site runs on any machine with Node.js 22 or newer:
 
 ```bash
 npm ci

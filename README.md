@@ -9,7 +9,7 @@ Visitors can also ask questions in plain English. An AI (Google Gemini) answers 
 
 ## Quick start
 
-You need [Node.js](https://nodejs.org) 20 or newer.
+You need [Node.js](https://nodejs.org) 22 or newer.
 
 ```bash
 npm install
