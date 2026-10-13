@@ -77,7 +77,9 @@ Everything on the site comes from the `content/` folder. Right now it holds **sa
 | `content/systems/*.ts` | One file per project (also add it to `content/systems/index.ts`) |
 | `public/resume.pdf` | Your résumé |
 
-Once an item holds real content, set `placeholder: false` on it. Then run `npm test`. If something is wrong, the test names the exact field, for example `systems.atlas.architecture.edges[3]: unknown node "ghost"`.
+Once an item holds real content, set `placeholder: false` on it. Then run `npm run build`. If something is wrong, the build names the exact field, for example `systems.atlas.architecture.edges[3]: unknown node "ghost"`.
+
+**[CONTENT.md](CONTENT.md)** explains every field, where it shows up, and how to write it so it makes an impression. Read its warning first: the tests are written against the sample content.
 
 ## Commands
 
@@ -91,7 +93,7 @@ Once an item holds real content, set `placeholder: false` on it. Then run `npm t
 
 ## Deploy
 
-See **[docs/DEPLOY.md](docs/DEPLOY.md)**. It walks through a free Vercel deploy step by step.
+See **[docs/DEPLOY.md](docs/DEPLOY.md)**. It walks through a free Vercel deploy step by step. **[DEPLOYMENT.md](DEPLOYMENT.md)** records the live deployment and how to run it day to day.
 
 ## Project layout
 
