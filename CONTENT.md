@@ -35,23 +35,13 @@ Write for the 30-second reader in the short fields (`tagline`, `impact`, commit 
 
 ## ⚠️ Read this before you start
 
-These things are tied to the sample content and **will break or look wrong** when you replace it:
+These things are tied to the sample content and **will look wrong** when you replace it. (The tests are fine: they use their own copy of the sample content, see [Tests](#tests-and-your-content).)
 
-1. **About 110 tests use the sample projects.** Many files under `tests/` refer to `atlas`, `relay`, `beacon`, `ledger`, `Your Name` and `example-labs`. Two tests in `tests/content.test.ts` will also fail:
-   - "marks every system as placeholder": it expects `placeholder: true` everywhere;
-   - "has exactly three featured systems": it expects exactly 3 systems with `featured: true`.
+1. **The shell's help pages use the sample names in their examples.** For example, `man ls` shows `ls -l systems/atlas` and `man diff` shows `diff atlas relay`. Once `atlas` is gone, these examples fail when a visitor tries them. They're in `core/shell/commands/*.ts` (the `examples:` lines) and in `git show 7f3b`, which uses a sample commit hash. Update them to use your project slugs.
 
-   **What it means:** `npm test` and `npm run check` will fail after you swap the content, even if the content is fine. **The live site isn't affected**, because Vercel only runs `next build`, and that still validates the content strictly. Until the tests are changed to use their own sample data, check your content with:
-   ```bash
-   npx tsc --noEmit && npm run build
-   ```
-   The proper fix is to make the tests use a fixed copy of the sample data instead of `content/`. That's an engineering task; ask for it as one.
+2. **README.md and DEPLOYMENT.md mention `run atlas`** as an example. Update those too, or leave them, since they're developer docs.
 
-2. **The shell's help pages use the sample names in their examples.** For example, `man ls` shows `ls -l systems/atlas` and `man diff` shows `diff atlas relay`. Once `atlas` is gone, these examples fail when a visitor tries them. They're in `core/shell/commands/*.ts` (the `examples:` lines) and in `git show 7f3b`, which uses a sample commit hash. Update them to use your project slugs.
-
-3. **README.md and DEPLOYMENT.md mention `run atlas`** as an example. Update those too, or leave them, since they're developer docs.
-
-4. **The repository is public.** Everything in `content/` and `public/resume.pdf` can be read on GitHub. Leave out your phone number, home address, and anything covered by an NDA (see [Confidential work](#confidential-work)).
+3. **The repository is public.** Everything in `content/` and `public/resume.pdf` can be read on GitHub. Leave out your phone number, home address, and anything covered by an NDA (see [Confidential work](#confidential-work)).
 
 ---
 
@@ -321,13 +311,23 @@ Check these in the browser:
 
 If the content is invalid, the dev page shows an error naming the field, for example `systems.atlas.architecture.edges[3]: unknown node "ghost"`.
 
-### 2. Check that it builds
+### 2. Check everything
 
 ```bash
-npx tsc --noEmit && npm run build
+npm run check        # type check, lint, tests and a production build
 ```
 
-(`npm run check` also runs the tests, which fail until they're changed to use their own sample data. See [Read this before you start](#️-read-this-before-you-start).)
+#### Tests and your content
+
+The tests don't read `content/`. They run against a frozen copy of the sample content in `tests/fixtures/content/` (set up in `vitest.config.mts`), so replacing your content never breaks them. **Don't edit the fixture to match your content.**
+
+One test, `tests/shipped-content.test.ts`, does check your real `content/`. It fails if a field is invalid or a reference points at nothing, and names the field, for example:
+
+```
+experience.acme.commits[1]: unknown system "atlas"
+```
+
+That's the usual mistake after renaming or deleting a project: a commit's `systems: [...]` still points at the old slug.
 
 ### 3. Commit and push
 

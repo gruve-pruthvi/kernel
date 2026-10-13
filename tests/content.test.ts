@@ -16,7 +16,7 @@ import type { Portfolio } from "@/core/schema";
 
 const clone = (): Portfolio => structuredClone(portfolio);
 
-describe("shipped content", () => {
+describe("fixture content", () => {
   it("validates with zero integrity errors", () => {
     expect(() => validatePortfolio(rawPortfolio)).not.toThrow();
     expect(checkIntegrity(portfolio)).toEqual([]);

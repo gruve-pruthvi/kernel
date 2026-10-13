@@ -77,9 +77,9 @@ Everything on the site comes from the `content/` folder. Right now it holds **sa
 | `content/systems/*.ts` | One file per project (also add it to `content/systems/index.ts`) |
 | `public/resume.pdf` | Your résumé |
 
-Once an item holds real content, set `placeholder: false` on it. Then run `npm run build`. If something is wrong, the build names the exact field, for example `systems.atlas.architecture.edges[3]: unknown node "ghost"`.
+Once an item holds real content, set `placeholder: false` on it. Then run `npm run check`. If something is wrong, it names the exact field, for example `systems.atlas.architecture.edges[3]: unknown node "ghost"`.
 
-**[CONTENT.md](CONTENT.md)** explains every field, where it shows up, and how to write it so it makes an impression. Read its warning first: the tests are written against the sample content.
+**[CONTENT.md](CONTENT.md)** explains every field, where it shows up, and how to write it so it makes an impression. The tests use their own copy of the sample content (`tests/fixtures/content/`), so editing `content/` won't break them.
 
 ## Commands
 
