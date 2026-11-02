@@ -1,0 +1,80 @@
+import type { System } from "@/core/schema";
+
+export const gsc = {
+  id: "gsc",
+  slug: "gsc",
+  number: 1,
+  name: "GSC",
+  tagline: "A self-correcting multi-agent system that turns plain-English questions into SQL.",
+  featured: true,
+  category: "AI · Agents",
+  period: "2025 — 2026",
+  status: "production",
+  summary:
+    "GSC answers natural-language questions about a database by writing and running SQL. A LangGraph multi-agent loop reads the live schema through MCP, executes the query and corrects itself when the query fails.",
+  problem:
+    "Questions were handled by static filter extraction: the system pulled a fixed set of filters out of each question, so anything more complex than a simple lookup couldn't be answered.",
+  context: "Client project at Gruve.",
+  role: "Architect and lead developer: agent design, the NL2SQL loop and the MCP integration",
+  responsibilities: [
+    "Architected the LangGraph multi-agent system for NL2SQL",
+    "Built the self-correcting loop that reads execution errors and rewrites the query",
+    "Used MCP to introspect database schemas securely at run time",
+    "Replaced static filter extraction with dynamic SQL generation",
+  ],
+  technologies: ["python", "langgraph", "mcp", "llm-apis"],
+  capabilities: ["agents", "apis"],
+  architecture: {
+    nodes: [
+      { id: "user", label: "User", kind: "client", x: 4, y: 50, description: "Asks a question about the data in plain English." },
+      { id: "graph", label: "Agent Graph", kind: "agent", x: 24, y: 50, description: "LangGraph orchestrator: routes the question through the SQL agents and returns the answer.", tech: ["langgraph"] },
+      { id: "writer", label: "SQL Writer", kind: "agent", x: 50, y: 16, description: "Drafts SQL from the question and the live schema." },
+      { id: "llm", label: "LLM", kind: "model", x: 78, y: 16, description: "Generates and rewrites the SQL.", tech: ["llm-apis"] },
+      { id: "mcp", label: "MCP Tools", kind: "service", x: 60, y: 62, description: "Exposes schema introspection and query execution as tools, so agents never get raw database access.", tech: ["mcp"] },
+      { id: "db", label: "Database", kind: "store", x: 94, y: 62, description: "The client database being queried." },
+      { id: "fixer", label: "Self-Correction", kind: "agent", x: 34, y: 86, description: "Reads a failed query's error and sends the writer back with what went wrong." },
+    ],
+    edges: [
+      { from: "user", to: "graph" },
+      { from: "graph", to: "writer", label: "plan" },
+      { from: "writer", to: "llm", label: "generate" },
+      { from: "writer", to: "mcp", label: "run" },
+      { from: "mcp", to: "db", label: "query" },
+      { from: "mcp", to: "fixer", label: "error" },
+      { from: "fixer", to: "writer", label: "rewrite" },
+    ],
+  },
+  decisions: [
+    {
+      title: "Dynamic SQL generation over static filter extraction",
+      context: "The existing approach pulled a fixed set of filters out of each question, which capped what users could ask.",
+      options: ["Keep static filter extraction", "Generate SQL with an LLM and verify it by running it"],
+      choice: "Generate SQL with an LLM and verify it by running it",
+      rationale: "Generated SQL can answer anything the schema supports; running it and correcting on failure keeps the flexibility from turning into wrong answers.",
+      status: "accepted",
+    },
+    {
+      title: "Schema access through MCP tools",
+      context: "The agents need an accurate, current view of the schema without being handed open database access.",
+      options: ["Paste the schema into the prompt", "Introspect the schema through MCP tools"],
+      choice: "Introspect the schema through MCP tools",
+      rationale: "The schema is read when it's needed instead of going stale in a prompt, and every database touch goes through a controlled tool boundary.",
+      status: "accepted",
+    },
+  ],
+  simulation: {
+    prompt: "Which customers placed the most orders last quarter?",
+    steps: [
+      { nodeId: "user", title: "REQUEST", detail: "Question received in plain English", durationMs: 700 },
+      { nodeId: "graph", title: "PLAN", detail: "Routed to the SQL agents", durationMs: 700 },
+      { nodeId: "mcp", title: "SCHEMA", detail: "Live schema read through MCP", durationMs: 800 },
+      { nodeId: "writer", title: "DRAFT", detail: "SQL drafted against the schema", durationMs: 800 },
+      { nodeId: "llm", title: "GENERATE", detail: "Query generated", durationMs: 800 },
+      { nodeId: "db", title: "EXECUTE", detail: "Query run through the MCP tool — error returned", durationMs: 900 },
+      { nodeId: "fixer", title: "CORRECT", detail: "Error read back · query rewritten", durationMs: 900 },
+      { nodeId: "db", title: "RETRY", detail: "Corrected query runs cleanly", durationMs: 800 },
+      { nodeId: "user", title: "RESPONSE", detail: "Answer returned", durationMs: 700 },
+    ],
+  },
+  placeholder: false,
+} satisfies System;

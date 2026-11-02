@@ -118,7 +118,7 @@ const man: Command = {
   summary: "read the manual",
   usage: "man <command | system | kernel>",
   description: ["Shows the manual for a command, a system (generated from its content), or `man kernel` for the overview."],
-  examples: ["man kernel", "man grep", "man atlas"],
+  examples: ["man kernel", "man grep", "man gsc"],
   seeAlso: ["help", "kernel"],
   run(args, _flags, ctx) {
     const topic = args[0]?.toLowerCase();
@@ -144,7 +144,7 @@ const TOPICS: Record<string, OutputItem[]> = {
     h("SEARCH"),
     body([seg("grep -i rag .", "accent"), seg("           search every file", "muted")]),
     body([seg("find . -name *.md", "accent"), seg("       find by name or -type", "muted")]),
-    body([seg("whereis kafka", "accent"), seg("           every file mentioning a term", "muted")]),
+    body([seg("whereis langgraph", "accent"), seg("       every file mentioning a term", "muted")]),
     body([seg("grep -i agent . | head -n 5", "accent"), seg(" pipes work", "muted")]),
   ],
   shortcuts: [
@@ -307,7 +307,7 @@ const ask: Command = {
     "Answers from this portfolio's content only (Gemini when configured, local search otherwise), then lists the related systems and the parts that match.",
     "You can also just type a question — `ask` is optional.",
   ],
-  examples: ["ask what has been built with agents?", 'ask "how does atlas stay grounded?"'],
+  examples: ["ask what has been built with agents?", 'ask "how does gsc fix a failing query?"'],
   seeAlso: ["grep", "man"],
   run(args) {
     const question = args.join(" ").trim();

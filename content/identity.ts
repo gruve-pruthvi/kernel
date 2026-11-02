@@ -1,42 +1,40 @@
-// PLACEHOLDER — replace every value with your real details.
 import type { Identity } from "@/core/schema";
 
 export const identity = {
-  name: "Your Name",
-  role: "Software Engineer · AI Systems",
-  tagline: "I build systems that reason, retrieve, orchestrate and act.",
+  name: "Pruthvi Parade",
+  role: "Software Engineer · AI Infrastructure & Agentic AI",
+  tagline: "I build agentic AI systems and the infrastructure that serves them.",
   summary:
-    "Sample summary — replace in content/identity.ts. An engineer focused on agentic AI, retrieval systems and the cloud platforms that run them, who cares about evidence over claims.",
-  location: "City, Country",
-  availability: "Open to new opportunities",
+    "Software engineer building AI applications since 2023, from multi-agent NL2SQL and enterprise RAG to serving LLMs in production. Currently an SDE II on AI infrastructure at AI Fabrik, deploying, benchmarking and right-sizing models on Kubernetes.",
+  location: "Pune, India",
   links: {
-    email: "you@example.com",
-    github: "https://github.com/your-handle",
-    linkedin: "https://www.linkedin.com/in/your-handle",
+    email: "parade.pruthvi@gmail.com",
+    github: "https://github.com/Pruthvi-Parade",
+    linkedin: "https://www.linkedin.com/in/pruthvi-parade-2040b0248",
     resume: "/resume.pdf",
   },
   principles: [
     {
-      title: "Evidence over claims",
-      body: "Show the architecture, the trade-offs and the numbers. A diagram you can inspect beats a paragraph of adjectives.",
+      title: "Agents should check their own work",
+      body: "A generated query gets run, read and corrected before anyone sees it. GSC's self-correcting loop is built on that idea.",
     },
     {
-      title: "Function before spectacle",
-      body: "Interaction should carry information. If an animation doesn't explain something, it goes.",
+      title: "Measure before you tune",
+      body: "Benchmark latency and utilisation under real load first, then right-size. Serving configs change on evidence, not guesses.",
     },
     {
-      title: "Complexity must be earned",
-      body: "Start with the simplest system that could work, measure it, and add moving parts only when the data demands it.",
+      title: "Guardrails are part of the product",
+      body: "Authentication, secrets handling and safety checks belong in the first design: Dorsch GPT's guardrails, Infra Copilot's server-side dry-run.",
     },
     {
-      title: "Make failure boring",
-      body: "Fallbacks, retries and clear errors are features. The best incident is the one users never notice.",
+      title: "Private data stays private",
+      body: "If it can run on the user's machine, it should. Meeting Copilot's audio and transcripts never leave the laptop.",
     },
   ],
   human: {
     about:
-      "Sample text — replace in content/identity.ts. Outside of work I like taking systems apart to see how they think, reading about distributed systems, and long walks without a phone.",
-    interests: ["Distributed systems", "Developer tooling", "Photography", "Chess", "Hiking"],
+      "Away from the keyboard I'm usually at a hackathon or on a basketball court. I've taken part in several hackathons and basketball tournaments, and hosted my college's cultural fest.",
+    interests: ["Basketball", "Hackathons", "Hosting events", "Side projects"],
   },
-  placeholder: true,
+  placeholder: false,
 } satisfies Identity;

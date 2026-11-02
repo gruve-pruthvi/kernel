@@ -1,0 +1,70 @@
+import type { System } from "@/core/schema";
+
+export const docxter = {
+  id: "docxter",
+  slug: "docxter",
+  number: 3,
+  name: "DocXter",
+  tagline: "Enterprise RAG for talking to your documents in real time.",
+  featured: true,
+  category: "AI · Retrieval",
+  period: "2023 — 2025",
+  status: "production",
+  summary:
+    "DocXter lets people chat with their documents in real time. It's an enterprise RAG system built on Next.js, the Vercel AI SDK, FastAPI and Weaviate, with agentic workflows in LangGraph. Restructuring the knowledge base and adding caching made document loading 70% faster.",
+  problem: "Teams needed answers from large document sets interactively, and loading documents into the knowledge base was slow.",
+  context: "Built at CloudRedux.",
+  role: "Architect and developer",
+  responsibilities: [
+    "Architected the enterprise RAG system end to end",
+    "Built real-time document chat with Next.js and the Vercel AI SDK on a FastAPI backend",
+    "Implemented the agentic workflows with LangGraph over a Weaviate knowledge base",
+    "Restructured the knowledge base and added caching to speed up document loading",
+  ],
+  technologies: ["nextjs", "vercel-ai-sdk", "typescript", "fastapi", "python", "langgraph", "weaviate"],
+  capabilities: ["rag", "agents", "product-ui"],
+  architecture: {
+    nodes: [
+      { id: "ui", label: "Chat UI", kind: "client", x: 4, y: 50, description: "Next.js app with streaming chat over your documents.", tech: ["nextjs", "vercel-ai-sdk"] },
+      { id: "api", label: "API", kind: "service", x: 26, y: 50, description: "FastAPI backend for chat and document uploads.", tech: ["fastapi"] },
+      { id: "graph", label: "Agent Workflow", kind: "agent", x: 52, y: 18, description: "LangGraph workflow that retrieves context and drafts the answer.", tech: ["langgraph"] },
+      { id: "llm", label: "LLM", kind: "model", x: 82, y: 18, description: "Writes the answer from the retrieved passages." },
+      { id: "loader", label: "Document Loader", kind: "service", x: 52, y: 82, description: "Loads documents into the restructured knowledge base." },
+      { id: "cache", label: "Cache", kind: "store", x: 26, y: 88, description: "Strategic caching on the loading path." },
+      { id: "kb", label: "Knowledge Base", kind: "store", x: 82, y: 82, description: "Weaviate vector store, restructured for faster loading.", tech: ["weaviate"] },
+    ],
+    edges: [
+      { from: "ui", to: "api" },
+      { from: "api", to: "graph", label: "question" },
+      { from: "graph", to: "kb", label: "retrieve" },
+      { from: "graph", to: "llm", label: "generate" },
+      { from: "api", to: "loader", label: "upload" },
+      { from: "loader", to: "cache", label: "reuse" },
+      { from: "loader", to: "kb", label: "index" },
+    ],
+  },
+  decisions: [
+    {
+      title: "Fix loading at the data layer",
+      context: "Document loading was the slowest part of the experience.",
+      options: ["Keep the original knowledge-base structure", "Restructure the database and add strategic caching"],
+      choice: "Restructure the database and add strategic caching",
+      rationale: "The bottleneck was how documents were stored and reloaded; restructuring plus caching made loading 70% faster.",
+      status: "accepted",
+    },
+  ],
+  impact: [{ label: "faster document loading", value: "70%", note: "after restructuring the knowledge base and adding caching" }],
+  simulation: {
+    prompt: "What does this contract say about renewal?",
+    steps: [
+      { nodeId: "ui", title: "REQUEST", detail: "Question asked in the document chat", durationMs: 700 },
+      { nodeId: "api", title: "API", detail: "Streaming response opened", durationMs: 700 },
+      { nodeId: "graph", title: "WORKFLOW", detail: "Agent workflow plans the retrieval", durationMs: 800 },
+      { nodeId: "kb", title: "RETRIEVE", detail: "Relevant passages fetched from Weaviate", durationMs: 1000 },
+      { nodeId: "llm", title: "GENERATE", detail: "Answer drafted from the retrieved passages", durationMs: 1000 },
+      { nodeId: "api", title: "STREAM", detail: "Answer streamed back token by token", durationMs: 800 },
+      { nodeId: "ui", title: "RESPONSE", detail: "Answer shown next to the document", durationMs: 700 },
+    ],
+  },
+  placeholder: false,
+} satisfies System;

@@ -15,7 +15,7 @@ const ls: Command = {
     "Everything listed is clickable.",
   ],
   flags: { long: { short: "l", describe: "long format: kind, size (entries or lines), name" } },
-  examples: ["ls", "ls systems", "ls -l systems/atlas"],
+  examples: ["ls", "ls systems", "ls -l systems/gsc"],
   seeAlso: ["cd", "tree", "find"],
   run(args, flags, ctx) {
     const targets = args.length ? args : ["."];
@@ -54,7 +54,7 @@ const cd: Command = {
   summary: "change the working directory",
   usage: "cd [path | -]",
   description: ["Moves into a directory. With no path, returns home (~). `cd -` returns to the previous directory."],
-  examples: ["cd systems/atlas", "cd ..", "cd -"],
+  examples: ["cd systems/gsc", "cd ..", "cd -"],
   seeAlso: ["ls", "pwd"],
   run(args, _flags, ctx) {
     if (args.length > 1) return fail("cd: too many arguments");
@@ -90,7 +90,7 @@ const tree: Command = {
   usage: "tree [-L n] [path]",
   description: ["Draws the directory structure. This is the whole portfolio's information architecture."],
   flags: { level: { short: "L", value: true, placeholder: "n", describe: "descend at most n levels" } },
-  examples: ["tree", "tree -L 1", "tree systems/atlas"],
+  examples: ["tree", "tree -L 1", "tree systems/gsc"],
   seeAlso: ["ls", "find"],
   run(args, flags, ctx) {
     const level = flags.level === undefined ? Infinity : Number(flags.level);

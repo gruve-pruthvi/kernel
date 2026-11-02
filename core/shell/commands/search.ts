@@ -43,7 +43,7 @@ const grep: Command = {
     invert: { short: "v", describe: "show non-matching lines" },
     recursive: { short: "r", describe: "accepted for familiarity; directories are always searched" },
   },
-  examples: ["grep -i rag .", "grep -n Hybrid systems", "cat career.log | grep feat"],
+  examples: ["grep -i rag .", "grep -n LangGraph systems", "cat career.log | grep feat"],
   seeAlso: ["find", "whereis", "head"],
   run(args, flags, ctx) {
     const [pattern, ...paths] = args;
@@ -141,7 +141,7 @@ const which: Command = {
   summary: "locate a command, system, skill or technology",
   usage: "which <name…>",
   description: ["Shows whether a name is a builtin command, or where a system, capability or technology lives."],
-  examples: ["which atlas", "which rag", "which grep"],
+  examples: ["which gsc", "which rag", "which grep"],
   seeAlso: ["whereis", "find"],
   run(args, _flags, ctx) {
     if (args.length === 0) return fail("which: missing name", `usage: ${this.usage}`);
@@ -168,7 +168,7 @@ const whereis: Command = {
   summary: "every file that mentions a term",
   usage: "whereis <term>",
   description: ["Lists every path whose name or content mentions the term (case-insensitive), with a count of matching lines."],
-  examples: ["whereis kafka", "whereis agent"],
+  examples: ["whereis langgraph", "whereis agent"],
   seeAlso: ["grep", "which"],
   run(args, _flags, ctx) {
     const term = args.join(" ").toLowerCase();
