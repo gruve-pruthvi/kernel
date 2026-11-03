@@ -43,7 +43,6 @@ export const experience = [
     organisation: "Gruve",
     role: "SDE II — AI/ML",
     start: "2025-07",
-    end: "2026-04",
     summary: "Built agentic data-access systems for clients: multi-agent NL2SQL and a secure natural-language interface to a data lake.",
     branch: "feat/agentic-ai",
     commits: [
