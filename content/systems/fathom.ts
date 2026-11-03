@@ -8,7 +8,7 @@ export const fathom = {
   tagline: "Plain-English questions over a Microsoft Fabric data lake, behind security guardrails.",
   featured: false,
   category: "AI · Data access",
-  period: "2025 — 2026",
+  period: "Jul 2025 — Sep 2025",
   status: "production",
   summary:
     "Fathom lets non-technical users query a Microsoft Fabric data lake in plain English. A secure tool pipeline built on AWS Amplify and Azure Functions runs the database queries for them, with several security guardrails plus careful authentication and secrets handling.",

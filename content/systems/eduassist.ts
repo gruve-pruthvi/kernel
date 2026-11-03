@@ -8,7 +8,7 @@ export const eduassist = {
   tagline: "Turns PDFs into structured learning modules automatically.",
   featured: false,
   category: "AI · Document processing",
-  period: "2023 — 2025",
+  period: "Jul 2024 — Dec 2024",
   status: "production",
   summary:
     "EduAssist extracts content from PDFs with PyMuPDF and Layout Parser, vectorises it, and uses BERTopic topic modelling to generate structured learning modules for an educational platform.",

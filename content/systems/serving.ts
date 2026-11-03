@@ -8,7 +8,7 @@ export const serving = {
   tagline: "Production LLM serving on Kubernetes with vLLM and TensorRT-LLM.",
   featured: true,
   category: "AI Infra · Serving",
-  period: "2026 — present",
+  period: "Apr 2026 — present",
   status: "production",
   summary:
     "AI Fabrik's client-facing inference platform: LLMs served in production on vLLM and TensorRT-LLM, containerised with Docker, orchestrated on Kubernetes and exposed through secure API endpoints, with several models running at once. Latency is benchmarked under load, and deployments and autoscaling are right-sized from utilisation data.",
@@ -46,8 +46,18 @@ export const serving = {
   },
   decisions: [],
   impact: [
-    { label: "faster responses", value: "15–25%", note: "end-to-end inference latency, after tuning serving configs" },
+    { label: "faster responses", value: "15–25%", note: "end-to-end response time, after tuning serving configs" },
     { label: "less idle compute cost", value: "15–25%", note: "after right-sizing deployments and autoscaling" },
+  ],
+  benchmarks: [
+    {
+      metric: "p95 time to first token",
+      value: "410 → 340",
+      unit: "ms",
+      context: "28 concurrent users, 8B model, 1× A100",
+      measuredAt: "2026-07",
+      source: "vLLM benchmark_serving",
+    },
   ],
   placeholder: false,
 } satisfies System;

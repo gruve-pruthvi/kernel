@@ -8,7 +8,7 @@ export const docxter = {
   tagline: "Enterprise RAG for talking to your documents in real time.",
   featured: false,
   category: "AI · Retrieval",
-  period: "2023 — 2025",
+  period: "Apr 2024 — Jun 2025",
   status: "production",
   summary:
     "DocXter lets people chat with their documents in real time. It's an enterprise RAG system built on Next.js, the Vercel AI SDK, FastAPI and Weaviate, with agentic workflows in LangGraph. Restructuring the knowledge base and adding caching made document loading 70% faster.",

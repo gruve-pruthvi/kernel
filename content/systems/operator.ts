@@ -8,7 +8,7 @@ export const operator = {
   tagline: "A browser agent for web automation across Google, OpenAI and Anthropic models.",
   featured: false,
   category: "AI · Agents",
-  period: "2025",
+  period: "Feb 2025 — Aug 2025",
   status: "production",
   summary:
     "A browser agent system that extends the browser-use framework for AI-powered web automation, with support for Google, OpenAI and Anthropic models, a custom browser with persistent sessions, and HD screen recording.",

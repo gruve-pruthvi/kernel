@@ -8,7 +8,7 @@ export const meetingCopilot = {
   tagline: "An invisible AI sidekick for Teams, Zoom and Meet calls, with transcription that never leaves your machine.",
   featured: false,
   category: "AI · Productivity",
-  period: "2025",
+  period: "Jul 2026 — Oct 2026",
   status: "production",
   summary:
     "Meeting Copilot is a native desktop app that transcribes calls locally with whisper.cpp, spots questions as they're asked, and suggests answers from your own documents in an overlay that stays out of screen shares. When the call ends it captures the action items and writes the summary. Audio never leaves your machine; only text goes to the OpenAI API, using your own key.",
