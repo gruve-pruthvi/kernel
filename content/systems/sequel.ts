@@ -1,17 +1,17 @@
 import type { System } from "@/core/schema";
 
-export const gsc = {
-  id: "gsc",
-  slug: "gsc",
-  number: 1,
-  name: "GSC",
+export const sequel = {
+  id: "sequel",
+  slug: "sequel",
+  number: 3,
+  name: "Sequel",
   tagline: "A self-correcting multi-agent system that turns plain-English questions into SQL.",
   featured: true,
   category: "AI · Agents",
   period: "2025 — 2026",
   status: "production",
   summary:
-    "GSC answers natural-language questions about a database by writing and running SQL. A LangGraph multi-agent loop reads the live schema through MCP, executes the query and corrects itself when the query fails.",
+    "Sequel answers natural-language questions about a database by writing and running SQL. A LangGraph multi-agent loop reads the live schema through MCP, executes the query and corrects itself when the query fails. 96% of queries come back correct, and search is far more flexible than the fixed filters it replaced.",
   problem:
     "Questions were handled by static filter extraction: the system pulled a fixed set of filters out of each question, so anything more complex than a simple lookup couldn't be answered.",
   context: "Client project at Gruve.",
@@ -62,6 +62,7 @@ export const gsc = {
       status: "accepted",
     },
   ],
+  impact: [{ label: "of queries answered correctly", value: "96%", note: "measured in testing" }],
   simulation: {
     prompt: "Which customers placed the most orders last quarter?",
     steps: [

@@ -11,7 +11,7 @@ export const capabilities = [
     id: "rag",
     name: "Retrieval-Augmented Generation",
     description: "Grounding answers in documents: extraction and layout parsing, vectorisation, retrieval from Weaviate and streaming chat on top.",
-    technologies: ["langchain", "weaviate", "pymupdf", "layout-parser", "bertopic", "vercel-ai-sdk"],
+    technologies: ["langchain", "weaviate", "lancedb", "whisper-cpp", "pymupdf", "layout-parser", "bertopic", "vercel-ai-sdk"],
   },
   {
     id: "llm-serving",
@@ -29,12 +29,12 @@ export const capabilities = [
     id: "apis",
     name: "Backend Services & APIs",
     description: "Putting AI behind secure, authenticated endpoints with careful secrets handling.",
-    technologies: ["fastapi", "nodejs", "python", "typescript", "javascript", "go", "cpp", "postgres", "redis", "firebase"],
+    technologies: ["fastapi", "nodejs", "python", "typescript", "javascript", "go", "cpp", "rust", "uv", "postgres", "redis", "firebase", "sqlite"],
   },
   {
     id: "product-ui",
     name: "AI Product Interfaces",
-    description: "Real-time chat and dashboard interfaces that make AI systems usable by non-technical people.",
-    technologies: ["nextjs", "react", "typescript", "vercel-ai-sdk"],
+    description: "Real-time chat, dashboards and native desktop overlays that make AI systems usable by non-technical people.",
+    technologies: ["nextjs", "react", "vite", "tauri", "typescript", "vercel-ai-sdk"],
   },
 ] satisfies Capability[];

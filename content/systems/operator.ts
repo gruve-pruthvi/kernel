@@ -9,7 +9,7 @@ export const operator = {
   featured: false,
   category: "AI · Agents",
   period: "2025",
-  status: "prototype",
+  status: "production",
   summary:
     "A browser agent system that extends the browser-use framework for AI-powered web automation, with support for Google, OpenAI and Anthropic models, a custom browser with persistent sessions, and HD screen recording.",
   problem: "Browser automation needed to work with any major model provider, keep sessions between runs, and record what the agent actually did.",

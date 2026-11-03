@@ -3,10 +3,10 @@ import type { System } from "@/core/schema";
 export const docxter = {
   id: "docxter",
   slug: "docxter",
-  number: 3,
+  number: 4,
   name: "DocXter",
   tagline: "Enterprise RAG for talking to your documents in real time.",
-  featured: true,
+  featured: false,
   category: "AI · Retrieval",
   period: "2023 — 2025",
   status: "production",

@@ -3,7 +3,7 @@ import type { System } from "@/core/schema";
 export const serving = {
   id: "serving",
   slug: "serving",
-  number: 2,
+  number: 1,
   name: "LLM Serving Platform",
   tagline: "Production LLM serving on Kubernetes with vLLM and TensorRT-LLM.",
   featured: true,
@@ -45,5 +45,9 @@ export const serving = {
     ],
   },
   decisions: [],
+  impact: [
+    { label: "faster responses", value: "15–25%", note: "end-to-end inference latency, after tuning serving configs" },
+    { label: "less idle compute cost", value: "15–25%", note: "after right-sizing deployments and autoscaling" },
+  ],
   placeholder: false,
 } satisfies System;

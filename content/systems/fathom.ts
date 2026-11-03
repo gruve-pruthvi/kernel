@@ -1,17 +1,17 @@
 import type { System } from "@/core/schema";
 
-export const dorschGpt = {
-  id: "dorsch-gpt",
-  slug: "dorsch-gpt",
-  number: 4,
-  name: "Dorsch GPT",
+export const fathom = {
+  id: "fathom",
+  slug: "fathom",
+  number: 5,
+  name: "Fathom",
   tagline: "Plain-English questions over a Microsoft Fabric data lake, behind security guardrails.",
   featured: false,
   category: "AI · Data access",
   period: "2025 — 2026",
   status: "production",
   summary:
-    "Dorsch GPT lets non-technical users query a Microsoft Fabric data lake in plain English. A secure tool pipeline built on AWS Amplify and Azure Functions runs the database queries for them, with several security guardrails plus careful authentication and secrets handling.",
+    "Fathom lets non-technical users query a Microsoft Fabric data lake in plain English. A secure tool pipeline built on AWS Amplify and Azure Functions runs the database queries for them, with several security guardrails plus careful authentication and secrets handling.",
   problem: "Non-technical users couldn't query the data lake themselves; every question needed someone who could write the query.",
   context: "Client project at Gruve.",
   role: "Architect and developer",

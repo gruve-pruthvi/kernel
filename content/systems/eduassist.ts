@@ -3,7 +3,7 @@ import type { System } from "@/core/schema";
 export const eduassist = {
   id: "eduassist",
   slug: "eduassist",
-  number: 5,
+  number: 6,
   name: "EduAssist",
   tagline: "Turns PDFs into structured learning modules automatically.",
   featured: false,

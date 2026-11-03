@@ -36,7 +36,7 @@ const git: Command = {
     "Only documented milestones appear — nothing is generated.",
   ],
   flags: { oneline: { describe: "one line per commit" } },
-  examples: ["git log", "git log gsc --oneline", "git show a93c", "git branch"],
+  examples: ["git log", "git log sequel --oneline", "git show a93c", "git branch"],
   seeAlso: ["diff", "cat"],
   run(args, flags, ctx) {
     const [sub, target] = args;
@@ -102,7 +102,7 @@ const diff: Command = {
   summary: "compare two systems side by side",
   usage: "diff <system> <system>",
   description: ["Compares status, period, size and stack of two systems: = shared, - only in the first, + only in the second."],
-  examples: ["diff gsc docxter", "diff serving infra-copilot"],
+  examples: ["diff sequel docxter", "diff serving infra-copilot"],
   seeAlso: ["man", "graph", "git"],
   run(args, _flags, ctx) {
     if (args.length !== 2) return fail("diff: need two systems", `usage: ${this.usage}`);

@@ -28,7 +28,7 @@ const cat: Command = {
   summary: "print files",
   usage: "cat <file…>",
   description: ["Prints one or more files. Reads from a pipe when given no file. Views open in the side pane."],
-  examples: ["cat README.md", "cat systems/gsc/decisions.md", "cat about.md contact.txt"],
+  examples: ["cat README.md", "cat systems/sequel/decisions.md", "cat about.md contact.txt"],
   seeAlso: ["less", "head", "grep"],
   run(args, _flags, ctx) {
     if (args.length === 0) {
@@ -63,7 +63,7 @@ const less: Command = {
   summary: "read a file in the side pane",
   usage: "less <file>",
   description: ["Opens a file in a scrollable reader beside the shell. Press Esc or q to close it."],
-  examples: ["less README.md", "less systems/gsc/decisions.md"],
+  examples: ["less README.md", "less systems/sequel/decisions.md"],
   seeAlso: ["cat", "open"],
   run(args, _flags, ctx) {
     if (args.length !== 1) return fail("less: missing file operand", `usage: ${this.usage}`);

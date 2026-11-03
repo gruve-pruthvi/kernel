@@ -141,7 +141,7 @@ const which: Command = {
   summary: "locate a command, system, skill or technology",
   usage: "which <name…>",
   description: ["Shows whether a name is a builtin command, or where a system, capability or technology lives."],
-  examples: ["which gsc", "which rag", "which grep"],
+  examples: ["which sequel", "which rag", "which grep"],
   seeAlso: ["whereis", "find"],
   run(args, _flags, ctx) {
     if (args.length === 0) return fail("which: missing name", `usage: ${this.usage}`);

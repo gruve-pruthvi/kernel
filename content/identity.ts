@@ -5,8 +5,9 @@ export const identity = {
   role: "Software Engineer · AI Infrastructure & Agentic AI",
   tagline: "I build agentic AI systems and the infrastructure that serves them.",
   summary:
-    "Software engineer building AI applications since 2023, from multi-agent NL2SQL and enterprise RAG to serving LLMs in production. Currently an SDE II on AI infrastructure at AI Fabrik, deploying, benchmarking and right-sizing models on Kubernetes.",
+    "Software engineer with 4+ years building AI applications, from multi-agent NL2SQL and enterprise RAG to serving LLMs in production. Currently an SDE II on AI infrastructure at AI Fabrik, deploying, benchmarking and right-sizing models on Kubernetes. Looking for my next role building AI infrastructure or agentic systems.",
   location: "Pune, India",
+  availability: "Open to AI infrastructure & agentic AI roles",
   links: {
     email: "parade.pruthvi@gmail.com",
     github: "https://github.com/Pruthvi-Parade",
@@ -16,7 +17,7 @@ export const identity = {
   principles: [
     {
       title: "Agents should check their own work",
-      body: "A generated query gets run, read and corrected before anyone sees it. GSC's self-correcting loop is built on that idea.",
+      body: "A generated query gets run, read and corrected before anyone sees it. Sequel's self-correcting loop is built on that idea.",
     },
     {
       title: "Measure before you tune",
@@ -24,11 +25,11 @@ export const identity = {
     },
     {
       title: "Guardrails are part of the product",
-      body: "Authentication, secrets handling and safety checks belong in the first design: Dorsch GPT's guardrails, Infra Copilot's server-side dry-run.",
+      body: "Authentication, secrets handling and safety checks belong in the first design: Fathom's guardrails, Infra Copilot's approval gateway.",
     },
     {
       title: "Private data stays private",
-      body: "If it can run on the user's machine, it should. Meeting Copilot's audio and transcripts never leave the laptop.",
+      body: "If it can run on the user's machine, it should. Meeting Copilot transcribes on the laptop, so call audio never leaves it.",
     },
   ],
   human: {

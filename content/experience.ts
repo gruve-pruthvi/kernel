@@ -52,14 +52,14 @@ export const experience = [
         message: "feat: replace static filters with a self-correcting multi-agent NL2SQL loop",
         date: "2025-09",
         body: "LangGraph agents introspect the schema through MCP, run the query and fix it when it fails.",
-        systems: ["gsc"],
+        systems: ["sequel"],
       },
       {
         hash: "3e8b0c1",
         message: "feat: let non-technical users query a Fabric data lake in plain English",
         date: "2025-09",
         body: "Secure tool pipeline on AWS Amplify and Azure Functions with security guardrails.",
-        systems: ["dorsch-gpt"],
+        systems: ["fathom"],
       },
     ],
   },
@@ -105,13 +105,13 @@ export const experience = [
     commits: [
       {
         hash: "f5b2e18",
-        message: "feat: start Infra Copilot, a chat control room for Docker and Kubernetes",
+        message: "feat: ship Infra Copilot, a chat control room for Docker and Kubernetes",
         date: "2026-08",
         systems: ["infra-copilot"],
       },
       {
         hash: "1d4c7a9",
-        message: "feat: build Meeting Copilot, a local-only AI sidekick for calls",
+        message: "feat: ship Meeting Copilot, a local-first AI sidekick for calls",
         date: "2025-10",
         systems: ["meeting-copilot"],
       },

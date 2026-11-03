@@ -15,7 +15,7 @@ const open: Command = {
     "Opens a system's architecture, the skill graph or a file in the side pane; a page (trace, human, contact) in the visual site; or downloads the resume.",
   ],
   flags: { full: { describe: "for a system, open the full visual case study instead of the side pane" } },
-  examples: ["open gsc", "open gsc --full", "open graph", "open resume", "open trace"],
+  examples: ["open sequel", "open sequel --full", "open graph", "open resume", "open trace"],
   seeAlso: ["less", "gui", "graph"],
   run(args, flags, ctx) {
     const target = args[0];
@@ -55,7 +55,7 @@ const runCmd: Command = {
     "Plays a system's documented request walkthrough step by step, lighting up each component in the architecture pane.",
     "Inside ~/systems/<name>, `run` uses that system. This is a simulation of documented behaviour, not live infrastructure.",
   ],
-  examples: ["run gsc", "cd systems/docxter; run"],
+  examples: ["run sequel", "cd systems/docxter; run"],
   seeAlso: ["open", "man"],
   run(args, _flags, ctx) {
     const cwd = ctx.state.cwd;
@@ -84,7 +84,7 @@ const graph: Command = {
     "--depth expands the focus by that many hops (1–3).",
   ],
   flags: { depth: { value: true, placeholder: "n", describe: "also highlight neighbours up to n hops away (1–3)" } },
-  examples: ["graph", "graph langgraph", "graph --depth 2 gsc"],
+  examples: ["graph", "graph langgraph", "graph --depth 2 sequel"],
   seeAlso: ["open", "which"],
   run(args, flags, ctx) {
     const g = buildGraph(ctx.p);
